@@ -38,7 +38,10 @@ export default function AIChatInput({ onSend, disabled }: AIChatInputProps) {
   };
 
   return (
-    <div className="border-t border-gray-200 p-3 flex gap-2 items-end">
+    <div
+      className="p-3 flex gap-2 items-end shrink-0"
+      style={{ borderTop: "1px solid var(--grove-border)" }}
+    >
       <textarea
         ref={textareaRef}
         value={message}
@@ -48,14 +51,34 @@ export default function AIChatInput({ onSend, disabled }: AIChatInputProps) {
         placeholder="Ask about this note..."
         disabled={disabled}
         rows={1}
-        className="flex-1 resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex-1 resize-none rounded-md px-3 py-2 text-xs focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+        style={{
+          background: "var(--grove-surface-2)",
+          border: "1px solid var(--grove-border)",
+          color: "var(--grove-text)",
+          fontFamily: "var(--font-geist-mono)",
+          caretColor: "var(--grove-accent)",
+        }}
       />
       <button
         onClick={handleSend}
         disabled={disabled || !message.trim()}
-        className="shrink-0 rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="shrink-0 rounded-md p-2 transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{
+          background: "var(--grove-accent-dim)",
+          border: "1px solid var(--grove-accent-border)",
+          color: "var(--grove-accent)",
+        }}
+        onMouseEnter={e => {
+          if (!disabled && message.trim()) {
+            (e.currentTarget as HTMLElement).style.background = "var(--grove-accent-glow)";
+          }
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.background = "var(--grove-accent-dim)";
+        }}
       >
-        <Send className="h-4 w-4" />
+        <Send size={13} />
       </button>
     </div>
   );

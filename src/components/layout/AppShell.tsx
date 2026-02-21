@@ -18,32 +18,41 @@ export default function AppShell({
   onToggleAISidebar,
 }: AppShellProps) {
   return (
-    <div className="flex h-screen">
-      {/* Left: Sidebar */}
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--grove-bg)" }}>
       <Sidebar />
 
-      {/* Center: Editor area */}
-      <main className="flex-1 overflow-y-auto relative">
+      {/* Center: editor area */}
+      <main className="flex-1 overflow-y-auto relative" style={{ background: "var(--grove-surface)" }}>
         {children}
-        {/* Toggle buttons fixed to top-right of editor */}
-        <div className="fixed top-4 right-4 z-30 flex gap-2">
-          <button
-            onClick={onToggleAISidebar}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showAISidebar
-                ? "bg-accent text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            <Sparkles size={14} />
-            AI
-          </button>
-        </div>
+
+        {/* AI toggle — top right of editor */}
+        <button
+          onClick={onToggleAISidebar}
+          className="fixed top-4 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
+          style={{
+            background: showAISidebar ? "var(--grove-accent-dim)" : "var(--grove-surface-2)",
+            color: showAISidebar ? "var(--grove-accent)" : "var(--grove-text-2)",
+            border: showAISidebar
+              ? "1px solid var(--grove-accent-border)"
+              : "1px solid var(--grove-border)",
+            fontFamily: "var(--font-geist-mono)",
+            letterSpacing: "0.05em",
+          }}
+        >
+          <Sparkles size={12} />
+          AI
+        </button>
       </main>
 
-      {/* Right: AI Sidebar */}
+      {/* Right: AI sidebar */}
       {showAISidebar && (
-        <aside className="w-80 border-l border-sidebar-border bg-white h-screen shrink-0 flex flex-col">
+        <aside
+          className="w-[300px] h-screen shrink-0 flex flex-col"
+          style={{
+            background: "var(--grove-bg)",
+            borderLeft: "1px solid var(--grove-border)",
+          }}
+        >
           <AISidebar noteId={noteId} />
         </aside>
       )}

@@ -48,17 +48,33 @@ export default function AISidebar({ noteId }: AISidebarProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-gray-200 px-4 py-3 flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-blue-600" />
-        <h2 className="font-semibold text-sm text-gray-900">Grove AI</h2>
+      <div
+        className="px-4 py-3.5 flex items-center gap-2.5 shrink-0"
+        style={{ borderBottom: "1px solid var(--grove-border)" }}
+      >
+        <Sparkles
+          size={13}
+          style={{ color: "var(--grove-accent)" }}
+        />
+        <h2
+          className="text-xs font-semibold tracking-[0.15em] uppercase"
+          style={{ color: "var(--grove-text-2)", fontFamily: "var(--font-geist-mono)" }}
+        >
+          Grove AI
+        </h2>
       </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {(!messages || messages.length === 0) && (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm text-center px-4">
-            <Sparkles className="h-8 w-8 mb-3 text-gray-300" />
-            <p>Ask me anything about this note</p>
+          <div
+            className="flex flex-col items-center justify-center h-full text-center px-4 gap-3"
+            style={{ color: "var(--grove-text-3)" }}
+          >
+            <Sparkles size={28} style={{ color: "var(--grove-accent-border)" }} />
+            <p className="text-xs" style={{ fontFamily: "var(--font-geist-mono)" }}>
+              Ask me anything about this note
+            </p>
           </div>
         )}
 
@@ -73,11 +89,22 @@ export default function AISidebar({ noteId }: AISidebarProps) {
 
         {sending && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg p-3 text-sm text-gray-500">
-              <div className="text-xs font-medium text-gray-500 mb-1">
+            <div
+              className="rounded-lg p-3 text-xs max-w-[85%]"
+              style={{ background: "var(--grove-surface-2)", border: "1px solid var(--grove-border)" }}
+            >
+              <div
+                className="text-[10px] font-semibold tracking-[0.1em] uppercase mb-1.5"
+                style={{ color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }}
+              >
                 Grove AI
               </div>
-              <span className="animate-pulse">Thinking...</span>
+              <span
+                className="animate-pulse"
+                style={{ color: "var(--grove-text-3)" }}
+              >
+                Thinking...
+              </span>
             </div>
           </div>
         )}

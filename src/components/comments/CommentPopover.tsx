@@ -93,12 +93,24 @@ export function CommentPopover({
   return (
     <div
       ref={popoverRef}
-      className="fixed z-50 bg-white shadow-lg rounded-lg border p-3 min-w-[320px]"
-      style={{ top: `${top}px`, left: `${left}px` }}
+      className="fixed z-50 p-3 rounded-lg min-w-[300px]"
+      style={{
+        top: `${top}px`,
+        left: `${left}px`,
+        background: "var(--grove-surface-2)",
+        border: "1px solid var(--grove-border-2)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(141,255,168,0.04)",
+      }}
     >
       {/* Selected text quote */}
-      <div className="border-l-2 border-muted-foreground/30 pl-2 mb-3">
-        <p className="text-xs text-muted-foreground italic line-clamp-2">
+      <div
+        className="pl-2 mb-3"
+        style={{ borderLeft: "2px solid var(--grove-accent-border)" }}
+      >
+        <p
+          className="text-[11px] italic line-clamp-2"
+          style={{ color: "var(--grove-text-3)" }}
+        >
           &ldquo;{selection.text}&rdquo;
         </p>
       </div>
@@ -113,27 +125,51 @@ export function CommentPopover({
       </div>
 
       {/* AI action buttons */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 flex-wrap">
         <button
           onClick={() => handleAIAction("improve")}
-          className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors"
+          className="flex items-center gap-1 text-[10px] px-2 py-1.5 rounded transition-colors"
+          style={{
+            background: "rgba(141,255,168,0.06)",
+            border: "1px solid rgba(141,255,168,0.15)",
+            color: "var(--grove-accent)",
+            fontFamily: "var(--font-geist-mono)",
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(141,255,168,0.12)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(141,255,168,0.06)"}
         >
-          <Sparkles className="h-3 w-3" />
-          Suggest Improvement
+          <Sparkles size={10} />
+          improve
         </button>
         <button
           onClick={() => handleAIAction("fact_check")}
-          className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+          className="flex items-center gap-1 text-[10px] px-2 py-1.5 rounded transition-colors"
+          style={{
+            background: "rgba(128,180,255,0.06)",
+            border: "1px solid rgba(128,180,255,0.15)",
+            color: "#80b4ff",
+            fontFamily: "var(--font-geist-mono)",
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(128,180,255,0.12)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(128,180,255,0.06)"}
         >
-          <ShieldCheck className="h-3 w-3" />
-          Fact Check
+          <ShieldCheck size={10} />
+          fact-check
         </button>
         <button
           onClick={() => handleAIAction("find_related")}
-          className="flex items-center gap-1 text-xs px-2 py-1.5 rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+          className="flex items-center gap-1 text-[10px] px-2 py-1.5 rounded transition-colors"
+          style={{
+            background: "rgba(197,128,255,0.06)",
+            border: "1px solid rgba(197,128,255,0.15)",
+            color: "#c580ff",
+            fontFamily: "var(--font-geist-mono)",
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(197,128,255,0.12)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(197,128,255,0.06)"}
         >
-          <Link2 className="h-3 w-3" />
-          Find Related
+          <Link2 size={10} />
+          find related
         </button>
       </div>
     </div>

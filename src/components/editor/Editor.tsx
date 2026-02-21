@@ -14,6 +14,52 @@ import { CommentPopover } from "../comments/CommentPopover";
 import { CommentList } from "../comments/CommentList";
 import { useTextSelection } from "../../hooks/useTextSelection";
 
+// Custom dark theme matching Grove's bioluminescent palette
+const groveTheme = {
+  colors: {
+    editor: {
+      text: "#e0dace",
+      background: "#0b1710",
+    },
+    menu: {
+      text: "#e0dace",
+      background: "#101e16",
+    },
+    tooltip: {
+      text: "#e0dace",
+      background: "#162819",
+    },
+    hovered: {
+      text: "#e0dace",
+      background: "#162819",
+    },
+    selected: {
+      text: "#060d08",
+      background: "#8dffa8",
+    },
+    disabled: {
+      text: "#3a5445",
+      background: "#0b1710",
+    },
+    shadow: "rgba(0, 0, 0, 0.6)",
+    border: "#192c20",
+    sideMenu: "#3a5445",
+    highlights: {
+      gray:   { text: "#94a3b8", background: "#1a201a" },
+      brown:  { text: "#d4a574", background: "#1a1208" },
+      red:    { text: "#ff8080", background: "#1a0808" },
+      orange: { text: "#ffb380", background: "#1a1008" },
+      yellow: { text: "#ffd700", background: "#1a1808" },
+      green:  { text: "#8dffa8", background: "#081a0d" },
+      blue:   { text: "#80b4ff", background: "#081018" },
+      purple: { text: "#c580ff", background: "#10081a" },
+      pink:   { text: "#ff80c8", background: "#1a0812" },
+    },
+  },
+  borderRadius: 6,
+  fontFamily: "var(--font-geist-sans)",
+} as const;
+
 interface EditorProps {
   noteId: string;
 }
@@ -45,14 +91,11 @@ function EditorInner({
   });
 
   const handleChange = useCallback(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      const content = editor.document;
       updateNote({
         noteId,
-        content: content as any,
+        content: editor.document as any,
         title: titleRef.current || "Untitled",
       });
     }, 1000);
@@ -60,31 +103,30 @@ function EditorInner({
 
   useEffect(() => {
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
 
   return (
     <div className="flex h-full">
-      {/* Editor + Tags area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          <EditorHeader noteId={noteId} title={note.title} />
-          <div className="px-4 pb-8">
-            <BlockNoteView
-              editor={editor}
-              onChange={handleChange}
-              theme="light"
-            />
-          </div>
+      {/* Editor column */}
+      <div className="flex-1 overflow-y-auto min-w-0">
+        <EditorHeader noteId={noteId} title={note.title} />
+        <div className="px-12 pb-16">
+          <BlockNoteView
+            editor={editor}
+            onChange={handleChange}
+            theme={groveTheme}
+          />
         </div>
         <BlockTagIndicator noteId={noteId} />
       </div>
 
-      {/* Right: Comments panel */}
-      <div className="w-72 border-l border-gray-200 shrink-0 overflow-y-auto hidden lg:block">
+      {/* Comments panel */}
+      <div
+        className="w-64 shrink-0 overflow-y-auto hidden lg:block"
+        style={{ borderLeft: "1px solid var(--grove-border)", background: "var(--grove-bg)" }}
+      >
         <CommentList noteId={noteId} />
       </div>
 
@@ -93,11 +135,7 @@ function EditorInner({
         noteId={noteId}
         selection={
           selection
-            ? {
-                text: selection.text,
-                blockId: selection.blockId || "",
-                rect: selection.rect!,
-              }
+            ? { text: selection.text, blockId: selection.blockId || "", rect: selection.rect! }
             : null
         }
         onClose={clearSelection}
@@ -112,12 +150,15 @@ export default function Editor({ noteId }: EditorProps) {
 
   if (!note) {
     return (
-      <div className="max-w-4xl mx-auto p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-10 bg-gray-200 rounded w-1/3" />
-          <div className="h-4 bg-gray-200 rounded w-full" />
-          <div className="h-4 bg-gray-200 rounded w-5/6" />
-          <div className="h-4 bg-gray-200 rounded w-4/6" />
+      <div className="px-12 pt-12">
+        <div className="animate-pulse space-y-5">
+          <div className="h-10 rounded w-2/5" style={{ background: "var(--grove-surface-2)" }} />
+          <div className="h-px w-full" style={{ background: "var(--grove-border)" }} />
+          <div className="space-y-3 mt-8">
+            <div className="h-4 rounded w-full" style={{ background: "var(--grove-surface-2)" }} />
+            <div className="h-4 rounded w-4/5" style={{ background: "var(--grove-surface-2)" }} />
+            <div className="h-4 rounded w-3/5" style={{ background: "var(--grove-surface-2)" }} />
+          </div>
         </div>
       </div>
     );

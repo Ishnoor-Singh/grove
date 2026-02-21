@@ -18,7 +18,12 @@ export function CommentList({ noteId }: CommentListProps) {
   if (comments === undefined) {
     return (
       <div className="p-4">
-        <p className="text-sm text-muted-foreground">Loading comments...</p>
+        <p
+          className="text-xs"
+          style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}
+        >
+          Loading...
+        </p>
       </div>
     );
   }
@@ -59,10 +64,22 @@ export function CommentList({ noteId }: CommentListProps) {
     <div className="p-4 overflow-y-auto h-full">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <MessageSquare className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-semibold">Comments</h3>
+        <MessageSquare size={12} style={{ color: "var(--grove-text-3)" }} />
+        <h3
+          className="text-[10px] font-semibold tracking-[0.15em] uppercase"
+          style={{ color: "var(--grove-text-2)", fontFamily: "var(--font-geist-mono)" }}
+        >
+          Comments
+        </h3>
         {rootComments.length > 0 && (
-          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded"
+            style={{
+              background: "var(--grove-surface-2)",
+              color: "var(--grove-text-3)",
+              fontFamily: "var(--font-geist-mono)",
+            }}
+          >
             {rootComments.length}
           </span>
         )}
@@ -70,15 +87,17 @@ export function CommentList({ noteId }: CommentListProps) {
 
       {/* Comment threads */}
       {rootComments.length === 0 ? (
-        <div className="text-center py-8">
-          <MessageSquare className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">No comments yet</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">
-            Select text in the editor to add a comment
+        <div className="text-center py-8 flex flex-col items-center gap-2">
+          <MessageSquare size={24} style={{ color: "var(--grove-border-2)" }} />
+          <p className="text-xs" style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}>
+            no comments yet
+          </p>
+          <p className="text-[10px]" style={{ color: "var(--grove-text-3)", opacity: 0.6 }}>
+            select text to comment
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {rootComments.map((comment) => (
             <CommentThread
               key={comment._id}

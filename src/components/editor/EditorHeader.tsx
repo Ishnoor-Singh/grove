@@ -18,15 +18,12 @@ export default function EditorHeader({ noteId, title }: EditorHeaderProps) {
     const trimmed = currentTitle.trim();
     const newTitle = trimmed || "Untitled";
     if (newTitle !== title) {
-      await updateTitle({
-        noteId: noteId as Id<"notes">,
-        title: newTitle,
-      });
+      await updateTitle({ noteId: noteId as Id<"notes">, title: newTitle });
     }
   };
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-12 pt-12 pb-6">
       <input
         type="text"
         value={currentTitle}
@@ -38,8 +35,24 @@ export default function EditorHeader({ noteId, title }: EditorHeaderProps) {
             e.currentTarget.blur();
           }
         }}
-        className="w-full text-3xl font-bold border-none outline-none bg-transparent text-foreground placeholder-gray-300"
+        className="w-full border-none outline-none bg-transparent font-display"
         placeholder="Untitled"
+        style={{
+          fontSize: "clamp(2rem, 4vw, 2.75rem)",
+          fontStyle: "italic",
+          fontWeight: 400,
+          lineHeight: 1.2,
+          color: "var(--grove-text)",
+          letterSpacing: "-0.01em",
+        }}
+      />
+      {/* Hairline separator */}
+      <div
+        className="mt-6"
+        style={{
+          height: "1px",
+          background: "linear-gradient(to right, var(--grove-border), transparent 80%)",
+        }}
       />
     </div>
   );

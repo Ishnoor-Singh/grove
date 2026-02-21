@@ -46,7 +46,13 @@ export function CommentInput({
   };
 
   return (
-    <div className="flex items-end gap-1.5 border rounded-lg p-2">
+    <div
+      className="flex items-end gap-1.5 rounded-md p-2"
+      style={{
+        background: "var(--grove-surface-2)",
+        border: "1px solid var(--grove-border)",
+      }}
+    >
       <textarea
         ref={textareaRef}
         value={value}
@@ -54,14 +60,26 @@ export function CommentInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={1}
-        className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground min-h-[32px] max-h-[120px]"
+        className="flex-1 resize-none bg-transparent text-xs outline-none min-h-[28px] max-h-[100px]"
+        style={{
+          color: "var(--grove-text)",
+          caretColor: "var(--grove-accent)",
+          fontFamily: "inherit",
+        }}
       />
       <button
         onClick={handleSubmit}
         disabled={!value.trim()}
-        className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        className="shrink-0 p-1.5 rounded transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{ color: "var(--grove-text-3)" }}
+        onMouseEnter={e => {
+          if (value.trim()) (e.currentTarget as HTMLElement).style.color = "var(--grove-accent)";
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)";
+        }}
       >
-        <Send className="h-4 w-4" />
+        <Send size={12} />
       </button>
     </div>
   );

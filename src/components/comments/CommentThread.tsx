@@ -22,92 +22,125 @@ export function CommentThread({
   const isAI = comment.author === "ai";
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {/* Main comment */}
-      <div className="rounded-lg border bg-card p-3 space-y-2">
+      <div
+        className="rounded-md p-3 space-y-2"
+        style={{
+          background: "var(--grove-surface-2)",
+          border: "1px solid var(--grove-border)",
+        }}
+      >
         {/* Author and timestamp row */}
         <div className="flex items-center justify-between">
           <span
-            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded tracking-[0.06em] uppercase"
+            style={
               isAI
-                ? "bg-purple-100 text-purple-700"
-                : "bg-blue-100 text-blue-700"
-            }`}
+                ? { background: "rgba(141,255,168,0.08)", color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }
+                : { background: "rgba(128,180,255,0.08)", color: "#80b4ff", fontFamily: "var(--font-geist-mono)" }
+            }
           >
             {isAI ? "AI" : "You"}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span
+            className="text-[10px]"
+            style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}
+          >
             {formatRelativeTime(comment.createdAt)}
           </span>
         </div>
 
         {/* Selected text quote */}
         {comment.selectedText && (
-          <div className="border-l-2 border-muted-foreground/30 pl-2 py-0.5">
-            <p className="text-xs text-muted-foreground italic line-clamp-2">
+          <div
+            className="pl-2 py-0.5"
+            style={{ borderLeft: "2px solid var(--grove-border-2)" }}
+          >
+            <p
+              className="text-[11px] italic line-clamp-2"
+              style={{ color: "var(--grove-text-3)" }}
+            >
               &ldquo;{comment.selectedText}&rdquo;
             </p>
           </div>
         )}
 
         {/* Comment body */}
-        <p className="text-sm text-foreground whitespace-pre-wrap">
+        <p className="text-xs whitespace-pre-wrap" style={{ color: "var(--grove-text)" }}>
           {comment.body}
         </p>
 
         {/* Actions */}
         {!comment.resolved && (
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-3 pt-0.5">
             <button
               onClick={() => onResolve(comment._id)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-green-600 transition-colors"
+              className="flex items-center gap-1 text-[10px] transition-colors"
+              style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--grove-accent)"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)"}
             >
-              <CheckCircle className="h-3.5 w-3.5" />
-              Resolve
+              <CheckCircle size={11} />
+              resolve
             </button>
             <button
               onClick={() => setShowReplyInput(!showReplyInput)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-[10px] transition-colors"
+              style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--grove-text-2)"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)"}
             >
-              <Reply className="h-3.5 w-3.5" />
-              Reply
+              <Reply size={11} />
+              reply
             </button>
           </div>
         )}
 
         {comment.resolved && (
-          <div className="flex items-center gap-1 text-xs text-green-600">
-            <CheckCircle className="h-3.5 w-3.5" />
-            Resolved
+          <div
+            className="flex items-center gap-1 text-[10px]"
+            style={{ color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }}
+          >
+            <CheckCircle size={11} />
+            resolved
           </div>
         )}
       </div>
 
       {/* Replies */}
       {replies.length > 0 && (
-        <div className="ml-4 space-y-2">
+        <div className="ml-3 space-y-1.5">
           {replies.map((reply: any) => {
             const replyIsAI = reply.author === "ai";
             return (
               <div
                 key={reply._id}
-                className="rounded-lg border bg-card p-3 space-y-1.5"
+                className="rounded-md p-2.5 space-y-1.5"
+                style={{
+                  background: "var(--grove-surface-3)",
+                  border: "1px solid var(--grove-border)",
+                }}
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded tracking-[0.06em] uppercase"
+                    style={
                       replyIsAI
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}
+                        ? { background: "rgba(141,255,168,0.08)", color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }
+                        : { background: "rgba(128,180,255,0.08)", color: "#80b4ff", fontFamily: "var(--font-geist-mono)" }
+                    }
                   >
                     {replyIsAI ? "AI" : "You"}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span
+                    className="text-[10px]"
+                    style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}
+                  >
                     {formatRelativeTime(reply.createdAt)}
                   </span>
                 </div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">
+                <p className="text-xs whitespace-pre-wrap" style={{ color: "var(--grove-text)" }}>
                   {reply.body}
                 </p>
               </div>
@@ -118,7 +151,7 @@ export function CommentThread({
 
       {/* Reply input */}
       {showReplyInput && (
-        <div className="ml-4">
+        <div className="ml-3">
           <CommentInput
             placeholder="Write a reply..."
             autoFocus

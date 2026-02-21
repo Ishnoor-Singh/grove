@@ -1,32 +1,175 @@
 @import "tailwindcss";
+@import "@blocknote/core/fonts/inter.css";
+@import "@blocknote/mantine/style.css";
 
+/* ─── Grove Design Tokens ───────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --sidebar-bg: #f9fafb;
-  --sidebar-border: #e5e7eb;
-  --accent: #10b981;
-  --accent-light: #d1fae5;
+  --grove-bg:            #060d08;
+  --grove-surface:       #0b1710;
+  --grove-surface-2:     #101e16;
+  --grove-surface-3:     #162819;
+  --grove-border:        #192c20;
+  --grove-border-2:      #223d2b;
+
+  --grove-text:          #e0dace;
+  --grove-text-2:        #7da08a;
+  --grove-text-3:        #3a5445;
+
+  --grove-accent:        #8dffa8;
+  --grove-accent-dim:    rgba(141, 255, 168, 0.07);
+  --grove-accent-glow:   rgba(141, 255, 168, 0.14);
+  --grove-accent-border: rgba(141, 255, 168, 0.22);
 }
 
+/* ─── Tailwind Theme ─────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-sidebar-bg: var(--sidebar-bg);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-accent: var(--accent);
-  --color-accent-light: var(--accent-light);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background:    var(--grove-bg);
+  --color-surface:       var(--grove-surface);
+  --color-surface-2:     var(--grove-surface-2);
+  --color-surface-3:     var(--grove-surface-3);
+  --color-border:        var(--grove-border);
+  --color-border-2:      var(--grove-border-2);
+  --color-text:          var(--grove-text);
+  --color-text-2:        var(--grove-text-2);
+  --color-text-3:        var(--grove-text-3);
+  --color-accent:        var(--grove-accent);
+
+  --font-sans:           var(--font-geist-sans);
+  --font-mono:           var(--font-geist-mono);
+  --font-display:        var(--font-cormorant), Georgia, "Times New Roman", serif;
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background-color: var(--grove-bg);
+  color: var(--grove-text);
+  font-family: var(--font-geist-sans), -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* BlockNote editor overrides */
+/* Grain texture overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C%2Fsvg%3E");
+  opacity: 0.032;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ─── Selection ──────────────────────────────────────────────── */
+::selection {
+  background-color: var(--grove-accent-glow);
+  color: var(--grove-text);
+}
+
+/* ─── Scrollbars ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--grove-border-2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--grove-text-3);
+}
+
+/* ─── Utility Classes ────────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-gradient-accent {
+  background: linear-gradient(135deg, var(--grove-accent), #5de88a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px var(--grove-accent-glow), 0 0 40px rgba(141, 255, 168, 0.05);
+}
+
+.border-accent-subtle {
+  border-color: var(--grove-accent-border);
+}
+
+/* ─── Global Placeholder Colors ─────────────────────────────── */
+::placeholder {
+  color: var(--grove-text-3);
+  opacity: 1;
+}
+
+/* ─── BlockNote Dark Theme Overrides ─────────────────────────── */
+.bn-container,
 .bn-editor {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --bn-colors-editor-text:            var(--grove-text) !important;
+  --bn-colors-editor-background:      var(--grove-surface) !important;
+  --bn-colors-menu-text:              var(--grove-text) !important;
+  --bn-colors-menu-background:        var(--grove-surface-2) !important;
+  --bn-colors-tooltip-text:           var(--grove-text) !important;
+  --bn-colors-tooltip-background:     var(--grove-surface-3) !important;
+  --bn-colors-hovered-text:           var(--grove-text) !important;
+  --bn-colors-hovered-background:     var(--grove-surface-3) !important;
+  --bn-colors-selected-text:          var(--grove-bg) !important;
+  --bn-colors-selected-background:    var(--grove-accent) !important;
+  --bn-colors-disabled-text:          var(--grove-text-3) !important;
+  --bn-colors-disabled-background:    var(--grove-surface) !important;
+  --bn-colors-shadow:                 rgba(0, 0, 0, 0.6) !important;
+  --bn-colors-border:                 var(--grove-border) !important;
+  --bn-colors-side-menu:              var(--grove-text-3) !important;
+
+  font-family: var(--font-geist-sans), sans-serif;
+  background: var(--grove-surface) !important;
+  color: var(--grove-text) !important;
+}
+
+/* BlockNote placeholder text */
+.bn-editor .bn-block-content[data-is-empty-and-focused="true"]::before,
+.bn-editor .bn-block-content[data-is-empty-and-focused="false"]::before {
+  color: var(--grove-text-3) !important;
+}
+
+/* BlockNote slash menu and formatting toolbar */
+.bn-mantine .mantine-Menu-dropdown,
+.bn-mantine .mantine-Popover-dropdown {
+  background: var(--grove-surface-2) !important;
+  border-color: var(--grove-border) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.bn-mantine .mantine-Menu-item:hover,
+.bn-mantine .mantine-Menu-item[data-hovered] {
+  background: var(--grove-surface-3) !important;
+}
+
+/* BlockNote inline toolbar */
+.bn-toolbar {
+  background: var(--grove-surface-2) !important;
+  border: 1px solid var(--grove-border) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.bn-toolbar button {
+  color: var(--grove-text-2) !important;
+}
+.bn-toolbar button:hover,
+.bn-toolbar button[data-active="true"] {
+  background: var(--grove-surface-3) !important;
+  color: var(--grove-text) !important;
 }
