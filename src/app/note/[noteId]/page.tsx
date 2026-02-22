@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import NoteWorkspace from "./NoteWorkspace";
 
 export default async function NotePage({
@@ -6,5 +7,9 @@ export default async function NotePage({
   params: Promise<{ noteId: string }>;
 }) {
   const { noteId } = await params;
-  return <NoteWorkspace noteId={noteId} />;
+  return (
+    <Suspense fallback={<div style={{ background: "var(--grove-bg)" }} className="h-screen" />}>
+      <NoteWorkspace noteId={noteId} />
+    </Suspense>
+  );
 }
