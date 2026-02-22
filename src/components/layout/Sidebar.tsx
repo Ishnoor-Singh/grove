@@ -20,7 +20,7 @@ import {
   FilePlus,
 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 type NoteItem = {
   _id: Id<"notes">;
@@ -40,6 +40,22 @@ type FolderItem = {
   updatedAt: number;
 };
 
+// Payload stored in dataTransfer during a drag
+type DragPayload = { type: "note"; id: string } | { type: "folder"; id: string };
+
+function setDrag(e: React.DragEvent, payload: DragPayload) {
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("application/grove+json", JSON.stringify(payload));
+}
+
+function getDrag(e: React.DragEvent): DragPayload | null {
+  try {
+    return JSON.parse(e.dataTransfer.getData("application/grove+json"));
+  } catch {
+    return null;
+  }
+}
+
 function FolderNode({
   folder,
   allFolders,
@@ -48,6 +64,8 @@ function FolderNode({
   onCreateNote,
   onDeleteNote,
   pathname,
+  renamingFolderId,
+  onSetRenamingFolderId,
 }: {
   folder: FolderItem;
   allFolders: FolderItem[];
@@ -56,29 +74,78 @@ function FolderNode({
   onCreateNote: (folderId: Id<"folders">) => void;
   onDeleteNote: (e: React.MouseEvent, noteId: Id<"notes">) => void;
   pathname: string;
+  renamingFolderId: Id<"folders"> | null;
+  onSetRenamingFolderId: (id: Id<"folders"> | null) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(folder.name);
+  const [isDragOver, setIsDragOver] = useState(false);
   const renameRef = useRef<HTMLInputElement>(null);
   const renameFolder = useMutation(api.folders.rename);
   const removeFolder = useMutation(api.folders.remove);
   const createSubfolder = useMutation(api.folders.create);
+  const moveFolder = useMutation(api.folders.move);
+  const moveNote = useMutation(api.notes.moveToFolder);
 
   const childFolders = allFolders.filter((f) => f.parentId === folder._id);
   const folderNotes = notes.filter((n) => n.folderId === folder._id);
+
+  // Auto-enter rename mode when this folder was just created
+  useEffect(() => {
+    if (renamingFolderId === folder._id) {
+      setIsRenaming(true);
+      setTimeout(() => {
+        renameRef.current?.focus();
+        renameRef.current?.select();
+      }, 0);
+    }
+  }, [renamingFolderId, folder._id]);
 
   const handleRename = async () => {
     const trimmed = renameValue.trim();
     if (trimmed && trimmed !== folder.name) {
       await renameFolder({ folderId: folder._id, name: trimmed });
+    } else if (!trimmed) {
+      setRenameValue(folder.name);
     }
     setIsRenaming(false);
+    onSetRenamingFolderId(null);
   };
 
   const handleCreateSubfolder = async () => {
-    await createSubfolder({ name: "New Folder", parentId: folder._id });
+    const newId = await createSubfolder({ name: "New Folder", parentId: folder._id });
     setExpanded(true);
+    onSetRenamingFolderId(newId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const payload = getDrag(e);
+    // Don't allow dropping a folder onto itself
+    if (payload?.type === "folder" && payload.id === folder._id) return;
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const payload = getDrag(e);
+    if (!payload) return;
+    if (payload.type === "note") {
+      await moveNote({ noteId: payload.id as Id<"notes">, folderId: folder._id });
+      setExpanded(true);
+    } else if (payload.type === "folder" && payload.id !== folder._id) {
+      await moveFolder({ folderId: payload.id as Id<"folders">, parentId: folder._id });
+      setExpanded(true);
+    }
   };
 
   const indentStyle = { paddingLeft: `${(depth + 1) * 12 + 8}px` };
@@ -88,12 +155,27 @@ function FolderNode({
       {/* Folder row */}
       <div
         className="group flex items-center gap-1 py-1.5 pr-2 cursor-pointer transition-colors duration-100"
-        style={{ ...indentStyle, color: "var(--grove-text-2)" }}
-        onClick={() => setExpanded((v) => !v)}
+        style={{
+          ...indentStyle,
+          color: "var(--grove-text-2)",
+          background: isDragOver ? "var(--grove-accent-dim)" : "transparent",
+          outline: isDragOver ? "1px solid var(--grove-accent-border)" : "none",
+          borderRadius: isDragOver ? "4px" : undefined,
+        }}
+        onClick={() => !isRenaming && setExpanded((v) => !v)}
         onDoubleClick={() => {
+          setRenameValue(folder.name);
           setIsRenaming(true);
           setTimeout(() => renameRef.current?.select(), 0);
         }}
+        draggable
+        onDragStart={(e) => {
+          e.stopPropagation();
+          setDrag(e, { type: "folder", id: folder._id });
+        }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         <span style={{ color: "var(--grove-text-3)" }} className="shrink-0">
           {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -113,6 +195,7 @@ function FolderNode({
               if (e.key === "Escape") {
                 setRenameValue(folder.name);
                 setIsRenaming(false);
+                onSetRenamingFolderId(null);
               }
             }}
             onClick={(e) => e.stopPropagation()}
@@ -127,60 +210,62 @@ function FolderNode({
         )}
 
         {/* Folder actions */}
-        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onCreateNote(folder._id);
-              setExpanded(true);
-            }}
-            title="New note in folder"
-            className="p-0.5 rounded transition-colors"
-            style={{ color: "var(--grove-text-3)" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--grove-accent)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)";
-            }}
-          >
-            <FilePlus size={11} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCreateSubfolder();
-            }}
-            title="New subfolder"
-            className="p-0.5 rounded transition-colors"
-            style={{ color: "var(--grove-text-3)" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--grove-accent)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)";
-            }}
-          >
-            <FolderPlus size={11} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              removeFolder({ folderId: folder._id });
-            }}
-            title="Delete folder"
-            className="p-0.5 rounded transition-colors"
-            style={{ color: "var(--grove-text-3)" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "#f87171";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)";
-            }}
-          >
-            <Trash2 size={11} />
-          </button>
-        </div>
+        {!isRenaming && (
+          <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateNote(folder._id);
+                setExpanded(true);
+              }}
+              title="New note in folder"
+              className="p-0.5 rounded transition-colors"
+              style={{ color: "var(--grove-text-3)" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.color = "var(--grove-accent)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)";
+              }}
+            >
+              <FilePlus size={11} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCreateSubfolder();
+              }}
+              title="New subfolder"
+              className="p-0.5 rounded transition-colors"
+              style={{ color: "var(--grove-text-3)" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.color = "var(--grove-accent)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)";
+              }}
+            >
+              <FolderPlus size={11} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                removeFolder({ folderId: folder._id });
+              }}
+              title="Delete folder"
+              className="p-0.5 rounded transition-colors"
+              style={{ color: "var(--grove-text-3)" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.color = "#f87171";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.color = "var(--grove-text-3)";
+              }}
+            >
+              <Trash2 size={11} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Folder contents */}
@@ -196,6 +281,8 @@ function FolderNode({
               onCreateNote={onCreateNote}
               onDeleteNote={onDeleteNote}
               pathname={pathname}
+              renamingFolderId={renamingFolderId}
+              onSetRenamingFolderId={onSetRenamingFolderId}
             />
           ))}
           {folderNotes.map((note) => (
@@ -229,6 +316,10 @@ function NoteRow({
   return (
     <Link
       href={`/note/${note._id}`}
+      draggable
+      onDragStart={(e) => {
+        setDrag(e, { type: "note", id: note._id });
+      }}
       className="group relative flex items-start gap-2 pr-2 py-2 transition-colors duration-100"
       style={{
         paddingLeft: `${(depth + 1) * 12 + 8}px`,
@@ -317,9 +408,12 @@ export default function Sidebar() {
   const createNote = useMutation(api.notes.create);
   const removeNote = useMutation(api.notes.remove);
   const createFolder = useMutation(api.folders.create);
+  const moveNote = useMutation(api.notes.moveToFolder);
   const pathname = usePathname();
   const router = useRouter();
   const isLore = pathname.startsWith("/chat");
+  const [renamingFolderId, setRenamingFolderId] = useState<Id<"folders"> | null>(null);
+  const [unfiledDragOver, setUnfiledDragOver] = useState(false);
 
   const handleCreateNote = async (folderId?: Id<"folders">) => {
     const newId = await createNote({ folderId });
@@ -337,7 +431,8 @@ export default function Sidebar() {
   };
 
   const handleCreateFolder = async () => {
-    await createFolder({ name: "New Folder" });
+    const newId = await createFolder({ name: "New Folder" });
+    setRenamingFolderId(newId);
   };
 
   const rootFolders = folders?.filter((f) => !f.parentId) ?? [];
@@ -477,16 +572,35 @@ export default function Sidebar() {
                 onCreateNote={handleCreateNote}
                 onDeleteNote={handleDeleteNote}
                 pathname={pathname}
+                renamingFolderId={renamingFolderId}
+                onSetRenamingFolderId={setRenamingFolderId}
               />
             ))}
 
-            {/* Unfiled notes */}
+            {/* Unfiled notes — also a drop target */}
             {unfiledNotes.length > 0 && (
               <>
                 {rootFolders.length > 0 && (
                   <div
-                    className="px-4 pt-3 pb-1 text-[10px] font-mono uppercase tracking-widest"
-                    style={{ color: "var(--grove-text-3)" }}
+                    className="px-4 pt-3 pb-1 text-[10px] font-mono uppercase tracking-widest transition-colors"
+                    style={{
+                      color: unfiledDragOver ? "var(--grove-accent)" : "var(--grove-text-3)",
+                      background: unfiledDragOver ? "var(--grove-accent-dim)" : "transparent",
+                      borderRadius: "4px",
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setUnfiledDragOver(true);
+                    }}
+                    onDragLeave={() => setUnfiledDragOver(false)}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      setUnfiledDragOver(false);
+                      const payload = getDrag(e);
+                      if (payload?.type === "note") {
+                        await moveNote({ noteId: payload.id as Id<"notes">, folderId: undefined });
+                      }
+                    }}
                   >
                     Unfiled
                   </div>
