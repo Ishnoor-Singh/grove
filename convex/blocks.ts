@@ -45,21 +45,60 @@ export const syncFromNote = internalMutation({
   },
 });
 
-// Search blocks by text (case-insensitive substring match)
+// Search blocks and note titles using full-text search (BM25 relevance ranking).
+// Returns up to 20 results enriched with note title and noteId.
 export const search = internalQuery({
   args: { query: v.string() },
   handler: async (ctx, args) => {
-    const q = args.query.toLowerCase();
-    const all = await ctx.db.query("blocks").collect();
-    return all
-      .filter((b) => b.text.toLowerCase().includes(q))
-      .slice(0, 20)
-      .map((b) => ({
+    // Full-text search on block content
+    const blockHits = await ctx.db
+      .query("blocks")
+      .withSearchIndex("search_text", (q) => q.search("text", args.query))
+      .take(15);
+
+    // Full-text search on note titles — surface notes whose title matches even
+    // if the content blocks don't
+    const titleHits = await ctx.db
+      .query("notes")
+      .withSearchIndex("search_title", (q) => q.search("title", args.query))
+      .take(5);
+
+    // Resolve noteIds → titles for block hits (deduplicate lookups)
+    const noteCache = new Map<string, string>();
+    const getTitle = async (noteId: string): Promise<string> => {
+      if (noteCache.has(noteId)) return noteCache.get(noteId)!;
+      const note = await ctx.db.get(noteId as any);
+      const title = (note as any)?.title ?? "Untitled";
+      noteCache.set(noteId, title);
+      return title;
+    };
+
+    const blockResults = await Promise.all(
+      blockHits.map(async (b) => ({
         noteId: b.noteId,
+        noteTitle: await getTitle(b.noteId),
         blockId: b.blockId,
         text: b.text,
         type: b.type,
+        matchedOn: "content" as const,
+      }))
+    );
+
+    // Deduplicate noteIds already covered by block hits
+    const coveredNoteIds = new Set(blockResults.map((r) => r.noteId.toString()));
+
+    const titleResults = titleHits
+      .filter((n) => !coveredNoteIds.has(n._id.toString()))
+      .map((n) => ({
+        noteId: n._id,
+        noteTitle: n.title,
+        blockId: null,
+        text: n.title,
+        type: "title",
+        matchedOn: "title" as const,
       }));
+
+    return [...blockResults, ...titleResults];
   },
 });
 
