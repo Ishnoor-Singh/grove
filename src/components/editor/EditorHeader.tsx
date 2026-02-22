@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useState } from "react";
+import LinkNoteButton from "../graph/LinkNoteButton";
 
 interface EditorHeaderProps {
   noteId: string;
@@ -54,6 +55,9 @@ export default function EditorHeader({ noteId, title }: EditorHeaderProps) {
           background: "linear-gradient(to right, var(--grove-border), transparent 80%)",
         }}
       />
+      <div className="mt-3">
+        <LinkNoteButton noteId={noteId} />
+      </div>
     </div>
   );
 }
