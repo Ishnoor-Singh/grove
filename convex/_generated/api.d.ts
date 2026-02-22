@@ -9,9 +9,14 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as blocks from "../blocks.js";
 import type * as chat from "../chat.js";
 import type * as comments from "../comments.js";
+import type * as lore from "../lore.js";
+import type * as loreChatMessages from "../loreChatMessages.js";
+import type * as loreConversations from "../loreConversations.js";
 import type * as notes from "../notes.js";
+import type * as suggestedEdits from "../suggestedEdits.js";
 import type * as tags from "../tags.js";
 
 import type {
@@ -22,9 +27,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  blocks: typeof blocks;
   chat: typeof chat;
   comments: typeof comments;
+  lore: typeof lore;
+  loreChatMessages: typeof loreChatMessages;
+  loreConversations: typeof loreConversations;
   notes: typeof notes;
+  suggestedEdits: typeof suggestedEdits;
   tags: typeof tags;
 }>;
 
