@@ -31,7 +31,7 @@ export default function Home() {
   }, [notes, router, isMobile]);
 
   const handleCreateNote = async () => {
-    const newId = await createNote();
+    const newId = await createNote({});
     router.push(`/note/${newId}`);
   };
 
