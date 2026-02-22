@@ -2,9 +2,16 @@
 
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import { useCreateBlockNote } from "@blocknote/react";
+import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
+import {
+  useCreateBlockNote,
+  SuggestionMenuController,
+  getDefaultReactSlashMenuItems,
+  filterSuggestionItems,
+} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useQuery, useMutation } from "convex/react";
+import { PDFAttachmentBlock } from "./PdfAttachmentBlock";
 import { api } from "../../../convex/_generated/api";
 import { useCallback, useEffect, useRef } from "react";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -60,6 +67,13 @@ const groveTheme = {
   fontFamily: "var(--font-geist-sans)",
 } as const;
 
+const schema = BlockNoteSchema.create({
+  blockSpecs: {
+    ...defaultBlockSpecs,
+    pdfAttachment: PDFAttachmentBlock,
+  },
+});
+
 interface EditorProps {
   noteId: string;
 }
@@ -78,6 +92,8 @@ function EditorInner({
   };
 }) {
   const updateNote = useMutation(api.notes.update);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const getFileUrl = useMutation(api.files.getFileUrl);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef(note.title);
   const { selection, clearSelection } = useTextSelection();
@@ -86,8 +102,26 @@ function EditorInner({
     titleRef.current = note.title;
   }, [note.title]);
 
+  const uploadFile = useCallback(
+    async (file: File): Promise<string> => {
+      const uploadUrl = await generateUploadUrl({});
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!response.ok) throw new Error("Upload failed");
+      const { storageId } = await response.json();
+      const url = await getFileUrl({ storageId });
+      return url ?? "";
+    },
+    [generateUploadUrl, getFileUrl]
+  );
+
   const editor = useCreateBlockNote({
+    schema,
     initialContent: note.content?.length ? note.content : undefined,
+    uploadFile,
   });
 
   const handleChange = useCallback(() => {
@@ -117,7 +151,33 @@ function EditorInner({
             editor={editor}
             onChange={handleChange}
             theme={groveTheme}
-          />
+            slashMenu={false}
+          >
+            <SuggestionMenuController
+              triggerCharacter="/"
+              getItems={async (query) =>
+                filterSuggestionItems(
+                  [
+                    ...getDefaultReactSlashMenuItems(editor),
+                    {
+                      title: "PDF Attachment",
+                      subtext: "Attach a PDF file from your computer",
+                      onItemClick: () => {
+                        editor.insertBlocks(
+                          [{ type: "pdfAttachment" }],
+                          editor.getTextCursorPosition().block,
+                          "after"
+                        );
+                      },
+                      group: "Media",
+                      icon: <span>📄</span>,
+                    },
+                  ],
+                  query
+                )
+              }
+            />
+          </BlockNoteView>
         </div>
         <BlockTagIndicator noteId={noteId} />
       </div>
