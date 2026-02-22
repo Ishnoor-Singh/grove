@@ -63,6 +63,15 @@ export const search = internalQuery({
   },
 });
 
+// Get all blocks (noteId + text only) for semantic search
+export const listAll = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const blocks = await ctx.db.query("blocks").collect();
+    return blocks.map((b) => ({ noteId: b.noteId, text: b.text }));
+  },
+});
+
 // Get all blocks for a note ordered by position
 export const listByNote = internalQuery({
   args: { noteId: v.id("notes") },

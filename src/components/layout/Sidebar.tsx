@@ -1,11 +1,12 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Plus, Trash2, Lock, Unlock, MessageSquare, FileText } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, Lock, Unlock, MessageSquare, FileText, Search, X } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -13,9 +14,33 @@ export default function Sidebar() {
   const createNote = useMutation(api.notes.create);
   const removeNote = useMutation(api.notes.remove);
   const updateManagement = useMutation(api.notes.updateManagement);
+  const semanticSearch = useAction(api.search.semanticSearch);
   const pathname = usePathname();
   const router = useRouter();
   const isLore = pathname.startsWith("/chat");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<typeof notes | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const results = await semanticSearch({ query: searchQuery });
+      setSearchResults(results as typeof notes);
+    } catch (err) {
+      console.error("Semantic search failed:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setSearchResults(null);
+  };
 
   const handleCreateNote = async () => {
     const newId = await createNote();
@@ -100,9 +125,70 @@ export default function Sidebar() {
         </button>
       </div>
 
+      {/* Search */}
+      <div className="px-3 pb-2">
+        <form onSubmit={handleSearch}>
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md"
+            style={{
+              background: "var(--grove-surface)",
+              border: "1px solid var(--grove-border)",
+            }}
+          >
+            <Search size={11} style={{ color: "var(--grove-text-3)", flexShrink: 0 }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (!e.target.value.trim()) setSearchResults(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") handleClearSearch();
+              }}
+              placeholder="semantic search..."
+              className="flex-1 bg-transparent text-[11px] outline-none min-w-0"
+              style={{
+                color: "var(--grove-text-2)",
+                fontFamily: "var(--font-geist-mono)",
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="shrink-0"
+                style={{ color: "var(--grove-text-3)" }}
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
       {/* Notes list */}
       <nav className="flex-1 overflow-y-auto py-2">
-        {notes === undefined ? (
+        {isSearching ? (
+          <div className="px-5 py-3 space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="h-8 rounded animate-pulse"
+                style={{
+                  background: "var(--grove-surface)",
+                  opacity: 1 - i * 0.2,
+                }}
+              />
+            ))}
+            <div
+              className="text-[10px] text-center font-mono pt-1"
+              style={{ color: "var(--grove-text-3)" }}
+            >
+              searching...
+            </div>
+          </div>
+        ) : notes === undefined ? (
           <div className="px-5 py-3 space-y-2">
             {[...Array(4)].map((_, i) => (
               <div
@@ -115,7 +201,14 @@ export default function Sidebar() {
               />
             ))}
           </div>
-        ) : notes.length === 0 ? (
+        ) : searchResults !== null && searchResults.length === 0 ? (
+          <div
+            className="px-5 py-8 text-center text-xs"
+            style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}
+          >
+            no results
+          </div>
+        ) : (searchResults ?? notes).length === 0 ? (
           <div
             className="px-5 py-8 text-center text-xs"
             style={{ color: "var(--grove-text-3)", fontFamily: "var(--font-geist-mono)" }}
@@ -123,7 +216,7 @@ export default function Sidebar() {
             no notes yet
           </div>
         ) : (
-          notes.map((note) => {
+          (searchResults ?? notes).map((note) => {
             const isActive = pathname === `/note/${note._id}`;
             return (
               <Link
@@ -199,7 +292,9 @@ export default function Sidebar() {
           className="text-[10px] font-mono"
           style={{ color: "var(--grove-text-3)" }}
         >
-          {notes?.length ?? 0} {notes?.length === 1 ? "note" : "notes"}
+          {searchResults !== null
+            ? `${searchResults.length} result${searchResults.length === 1 ? "" : "s"}`
+            : `${notes?.length ?? 0} ${notes?.length === 1 ? "note" : "notes"}`}
         </div>
       </div>
     </aside>
