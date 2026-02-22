@@ -15,6 +15,7 @@ import type * as comments from "../comments.js";
 import type * as lore from "../lore.js";
 import type * as loreChatMessages from "../loreChatMessages.js";
 import type * as loreConversations from "../loreConversations.js";
+import type * as noteLinks from "../noteLinks.js";
 import type * as notes from "../notes.js";
 import type * as suggestedEdits from "../suggestedEdits.js";
 import type * as tags from "../tags.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   lore: typeof lore;
   loreChatMessages: typeof loreChatMessages;
   loreConversations: typeof loreConversations;
+  noteLinks: typeof noteLinks;
   notes: typeof notes;
   suggestedEdits: typeof suggestedEdits;
   tags: typeof tags;
