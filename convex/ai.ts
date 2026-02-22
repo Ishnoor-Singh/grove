@@ -320,6 +320,41 @@ export const syncBlocks = internalAction({
   },
 });
 
+// ---------------------------------------------------------------------------
+// Action 5 – detectBacklinks
+// ---------------------------------------------------------------------------
+
+export const detectBacklinks = internalAction({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, args) => {
+    try {
+      const note = await ctx.runQuery(internal.notes.getInternal, { noteId: args.noteId });
+      if (!note?.content) return;
+
+      const blocks = extractTextFromBlocks(note.content as any[]);
+      const noteText = blocks.map((b) => b.text).join(" ").toLowerCase();
+      if (!noteText.trim()) return;
+
+      const allNotes = await ctx.runQuery(internal.notes.listInternal, {});
+
+      for (const otherNote of allNotes) {
+        if (otherNote._id === args.noteId) continue;
+        const title = otherNote.title.toLowerCase().trim();
+        if (title.length < 3) continue;
+
+        if (noteText.includes(title)) {
+          await ctx.runMutation(internal.noteLinks.createAutoLink, {
+            sourceNoteId: args.noteId,
+            targetNoteId: otherNote._id,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("detectBacklinks failed:", error);
+    }
+  },
+});
+
 function flattenBlocks(
   blocks: any[],
   startOrder: number,
