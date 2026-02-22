@@ -18,6 +18,7 @@ import type * as loreConversations from "../loreConversations.js";
 import type * as notes from "../notes.js";
 import type * as suggestedEdits from "../suggestedEdits.js";
 import type * as tags from "../tags.js";
+import type * as userBlockTags from "../userBlockTags.js";
 
 import type {
   ApiFromModules,
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   notes: typeof notes;
   suggestedEdits: typeof suggestedEdits;
   tags: typeof tags;
+  userBlockTags: typeof userBlockTags;
 }>;
 
 /**
