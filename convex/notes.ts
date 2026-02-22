@@ -160,22 +160,25 @@ export const updateContent = internalMutation({
     noteId: v.id("notes"),
     content: v.any(),
     title: v.optional(v.string()),
+    sourceUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const patch: any = { content: args.content, updatedAt: Date.now() };
     if (args.title !== undefined) patch.title = args.title;
+    if (args.sourceUrl !== undefined) patch.sourceUrl = args.sourceUrl;
     await ctx.db.patch(args.noteId, patch);
   },
 });
 
 export const createInternal = internalMutation({
-  args: { title: v.string() },
+  args: { title: v.string(), sourceUrl: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert("notes", {
       title: args.title,
       content: [],
       managedBy: "ai",
+      sourceUrl: args.sourceUrl,
       createdAt: now,
       updatedAt: now,
     });

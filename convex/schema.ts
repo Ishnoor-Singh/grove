@@ -7,6 +7,7 @@ export default defineSchema({
     title: v.string(),
     content: v.any(),                    // BlockNote JSON array (editor source of truth)
     managedBy: v.optional(v.union(v.literal("ai"), v.literal("user"))), // optional for backwards compat, treat undefined as "ai"
+    sourceUrl: v.optional(v.string()),   // set when note was created by ingesting a source URL
     createdAt: v.number(),
     updatedAt: v.number(),
     lastTaggedAt: v.optional(v.number()),

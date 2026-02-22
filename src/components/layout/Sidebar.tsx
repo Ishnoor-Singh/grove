@@ -1,11 +1,12 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Plus, Trash2, Lock, Unlock, MessageSquare, FileText } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, Lock, Unlock, MessageSquare, FileText, Link2, Loader2 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -13,13 +14,35 @@ export default function Sidebar() {
   const createNote = useMutation(api.notes.create);
   const removeNote = useMutation(api.notes.remove);
   const updateManagement = useMutation(api.notes.updateManagement);
+  const ingestSource = useAction(api.sources.ingest);
   const pathname = usePathname();
   const router = useRouter();
   const isLore = pathname.startsWith("/chat");
 
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [ingesting, setIngesting] = useState(false);
+  const [ingestError, setIngestError] = useState<string | null>(null);
+
   const handleCreateNote = async () => {
     const newId = await createNote();
     router.push(`/note/${newId}`);
+  };
+
+  const handleIngest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const url = sourceUrl.trim();
+    if (!url) return;
+    setIngesting(true);
+    setIngestError(null);
+    try {
+      const noteId = await ingestSource({ url });
+      setSourceUrl("");
+      router.push(`/note/${noteId}`);
+    } catch (err: any) {
+      setIngestError(err?.message ?? "Failed to ingest source");
+    } finally {
+      setIngesting(false);
+    }
   };
 
   const handleDeleteNote = async (e: React.MouseEvent, noteId: Id<"notes">) => {
@@ -190,9 +213,70 @@ export default function Sidebar() {
         )}
       </nav>
 
+      {/* Source ingestion */}
+      <div
+        className="px-3 py-3 space-y-1.5"
+        style={{ borderTop: "1px solid var(--grove-border)" }}
+      >
+        <div
+          className="flex items-center gap-1.5 text-[10px] font-mono px-1"
+          style={{ color: "var(--grove-text-3)" }}
+        >
+          <Link2 size={9} />
+          ingest source
+        </div>
+        <form onSubmit={handleIngest} className="flex gap-1.5">
+          <input
+            type="url"
+            value={sourceUrl}
+            onChange={(e) => {
+              setSourceUrl(e.target.value);
+              setIngestError(null);
+            }}
+            placeholder="Paste URL..."
+            disabled={ingesting}
+            className="flex-1 min-w-0 rounded px-2 py-1 text-[11px] font-mono outline-none"
+            style={{
+              background: "var(--grove-surface)",
+              border: "1px solid var(--grove-border)",
+              color: "var(--grove-text)",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={ingesting || !sourceUrl.trim()}
+            className="flex items-center justify-center w-7 h-[26px] rounded shrink-0 transition-all"
+            style={{
+              background: ingesting || !sourceUrl.trim()
+                ? "var(--grove-surface)"
+                : "var(--grove-accent-dim)",
+              color: ingesting || !sourceUrl.trim()
+                ? "var(--grove-text-3)"
+                : "var(--grove-accent)",
+              border: "1px solid var(--grove-border)",
+            }}
+            aria-label="Ingest source"
+          >
+            {ingesting ? (
+              <Loader2 size={11} className="animate-spin" />
+            ) : (
+              <Link2 size={11} />
+            )}
+          </button>
+        </form>
+        {ingestError && (
+          <div
+            className="text-[10px] font-mono leading-tight px-1"
+            style={{ color: "#f87171" }}
+          >
+            {ingestError}
+          </div>
+        )}
+      </div>
+
       {/* Footer */}
       <div
-        className="px-5 py-3"
+        className="px-5 py-2.5"
         style={{ borderTop: "1px solid var(--grove-border)" }}
       >
         <div
