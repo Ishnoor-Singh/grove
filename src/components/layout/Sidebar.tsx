@@ -5,15 +5,17 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Lock, Unlock, MessageSquare, FileText } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 
 export default function Sidebar() {
   const notes = useQuery(api.notes.list);
   const createNote = useMutation(api.notes.create);
   const removeNote = useMutation(api.notes.remove);
+  const updateManagement = useMutation(api.notes.updateManagement);
   const pathname = usePathname();
   const router = useRouter();
+  const isLore = pathname.startsWith("/chat");
 
   const handleCreateNote = async () => {
     const newId = await createNote();
@@ -61,6 +63,40 @@ export default function Sidebar() {
           aria-label="Create new note"
         >
           <Plus size={15} />
+        </button>
+      </div>
+
+      {/* Nav toggle */}
+      <div
+        className="mx-3 mb-3 flex rounded-md overflow-hidden"
+        style={{ border: "1px solid var(--grove-border)" }}
+      >
+        <button
+          onClick={() => router.push("/chat")}
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[10px] transition-colors"
+          style={{
+            background: isLore ? "var(--grove-accent-dim)" : "transparent",
+            color: isLore ? "var(--grove-accent)" : "var(--grove-text-3)",
+            fontFamily: "var(--font-geist-mono)",
+            borderRight: "1px solid var(--grove-border)",
+          }}
+        >
+          <MessageSquare size={10} /> Lore
+        </button>
+        <button
+          onClick={() => {
+            const lastNote = localStorage.getItem("grove:lastNote");
+            if (lastNote) router.push(`/note/${lastNote}`);
+            else router.push("/");
+          }}
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[10px] transition-colors"
+          style={{
+            background: !isLore ? "var(--grove-accent-dim)" : "transparent",
+            color: !isLore ? "var(--grove-accent)" : "var(--grove-text-3)",
+            fontFamily: "var(--font-geist-mono)",
+          }}
+        >
+          <FileText size={10} /> Editor
         </button>
       </div>
 
@@ -133,6 +169,20 @@ export default function Sidebar() {
                   aria-label={`Delete ${note.title}`}
                 >
                   <Trash2 size={12} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateManagement({
+                      noteId: note._id,
+                      managedBy: (note.managedBy ?? "ai") === "ai" ? "user" : "ai",
+                    });
+                  }}
+                  title={`Managed by ${note.managedBy ?? "ai"} — click to toggle`}
+                  className="opacity-0 group-hover:opacity-60 ml-auto shrink-0 p-0.5"
+                  style={{ color: (note.managedBy ?? "ai") === "user" ? "var(--grove-accent)" : "var(--grove-text-3)" }}
+                >
+                  {(note.managedBy ?? "ai") === "user" ? <Lock size={9} /> : <Unlock size={9} />}
                 </button>
               </Link>
             );
