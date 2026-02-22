@@ -1,6 +1,19 @@
 import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
+export const rename = mutation({
+  args: {
+    sessionId: v.id("loreConversations"),
+    title: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.sessionId, {
+      title: args.title.trim() || "New conversation",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const list = query({
   args: {},
   handler: async (ctx) => {
