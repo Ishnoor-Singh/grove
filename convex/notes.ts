@@ -1,4 +1,4 @@
-import { query, mutation, internalQuery } from "./_generated/server";
+import { query, mutation, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -13,6 +13,7 @@ export const list = query({
     return notes.map((note) => ({
       _id: note._id,
       title: note.title,
+      managedBy: note.managedBy ?? "ai",
       updatedAt: note.updatedAt,
       createdAt: note.createdAt,
     }));
@@ -140,5 +141,53 @@ export const updateTitle = mutation({
       title: args.title,
       updatedAt: Date.now(),
     });
+  },
+});
+
+export const listInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("notes")
+      .withIndex("by_updatedAt")
+      .order("desc")
+      .collect();
+  },
+});
+
+export const updateContent = internalMutation({
+  args: {
+    noteId: v.id("notes"),
+    content: v.any(),
+    title: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const patch: any = { content: args.content, updatedAt: Date.now() };
+    if (args.title !== undefined) patch.title = args.title;
+    await ctx.db.patch(args.noteId, patch);
+  },
+});
+
+export const createInternal = internalMutation({
+  args: { title: v.string() },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("notes", {
+      title: args.title,
+      content: [],
+      managedBy: "ai",
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const updateManagement = mutation({
+  args: {
+    noteId: v.id("notes"),
+    managedBy: v.union(v.literal("ai"), v.literal("user")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.noteId, { managedBy: args.managedBy });
   },
 });
