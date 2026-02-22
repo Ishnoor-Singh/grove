@@ -12,7 +12,8 @@ export default defineSchema({
     lastTaggedAt: v.optional(v.number()),
   })
     .index("by_updatedAt", ["updatedAt"])
-    .index("by_createdAt", ["createdAt"]),
+    .index("by_createdAt", ["createdAt"])
+    .searchIndex("search_title", { searchField: "title" }),
 
   // ── Blocks (denormalized AI read model) ───────────────────────
   blocks: defineTable({
@@ -29,7 +30,8 @@ export default defineSchema({
   })
     .index("by_noteId", ["noteId"])
     .index("by_noteId_order", ["noteId", "order"])
-    .index("by_blockId", ["blockId"]),
+    .index("by_blockId", ["blockId"])
+    .searchIndex("search_text", { searchField: "text" }),
 
   // ── Suggested Edits ───────────────────────────────────────────
   suggestedEdits: defineTable({
