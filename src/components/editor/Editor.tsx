@@ -3,11 +3,11 @@
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
 import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
+import { filterSuggestionItems } from "@blocknote/core/extensions";
 import {
   useCreateBlockNote,
   SuggestionMenuController,
   getDefaultReactSlashMenuItems,
-  filterSuggestionItems,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { useQuery, useMutation } from "convex/react";
@@ -70,7 +70,7 @@ const groveTheme = {
 const schema = BlockNoteSchema.create({
   blockSpecs: {
     ...defaultBlockSpecs,
-    pdfAttachment: PDFAttachmentBlock,
+    pdfAttachment: PDFAttachmentBlock(),
   },
 });
 

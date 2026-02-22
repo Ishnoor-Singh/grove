@@ -11,6 +11,7 @@
 import type * as ai from "../ai.js";
 import type * as chat from "../chat.js";
 import type * as comments from "../comments.js";
+import type * as files from "../files.js";
 import type * as notes from "../notes.js";
 import type * as tags from "../tags.js";
 
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   chat: typeof chat;
   comments: typeof comments;
+  files: typeof files;
   notes: typeof notes;
   tags: typeof tags;
 }>;
