@@ -14,6 +14,7 @@ export const list = query({
       _id: note._id,
       title: note.title,
       managedBy: note.managedBy ?? "ai",
+      folderId: note.folderId,
       updatedAt: note.updatedAt,
       createdAt: note.createdAt,
     }));
@@ -171,7 +172,11 @@ export const updateContent = internalMutation({
 });
 
 export const createInternal = internalMutation({
-  args: { title: v.string(), sourceUrl: v.optional(v.string()) },
+  args: {
+    title: v.string(),
+    sourceUrl: v.optional(v.string()),
+    folderId: v.optional(v.id("folders")),
+  },
   handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert("notes", {
@@ -179,6 +184,7 @@ export const createInternal = internalMutation({
       content: [],
       managedBy: "ai",
       sourceUrl: args.sourceUrl,
+      folderId: args.folderId,
       createdAt: now,
       updatedAt: now,
     });

@@ -171,10 +171,14 @@ export const ingest = action({
       throw new Error("No content returned from source — the URL may not be supported");
     }
 
-    // Create the note
+    // Ensure Inbox folder exists and put the note there
+    const inboxId = await ctx.runMutation(internal.folders.getOrCreateInbox, {});
+
+    // Create the note directly in Inbox
     const noteId = await ctx.runMutation(internal.notes.createInternal, {
       title,
       sourceUrl: url,
+      folderId: inboxId,
     });
 
     const content = buildSourceNoteContent(url, rawContent);

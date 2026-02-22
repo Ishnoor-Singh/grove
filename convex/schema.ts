@@ -2,18 +2,29 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  // ── Folders ───────────────────────────────────────────────────
+  folders: defineTable({
+    name: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_name", ["name"]),
+
   // ── Notes ─────────────────────────────────────────────────────
   notes: defineTable({
     title: v.string(),
     content: v.any(),                    // BlockNote JSON array (editor source of truth)
     managedBy: v.optional(v.union(v.literal("ai"), v.literal("user"))), // optional for backwards compat, treat undefined as "ai"
     sourceUrl: v.optional(v.string()),   // set when note was created by ingesting a source URL
+    folderId: v.optional(v.id("folders")),
     createdAt: v.number(),
     updatedAt: v.number(),
     lastTaggedAt: v.optional(v.number()),
   })
     .index("by_updatedAt", ["updatedAt"])
     .index("by_createdAt", ["createdAt"])
+    .index("by_folderId", ["folderId"])
     .searchIndex("search_title", { searchField: "title" }),
 
   // ── Blocks (denormalized AI read model) ───────────────────────

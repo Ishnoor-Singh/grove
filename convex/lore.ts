@@ -6,19 +6,22 @@ import Anthropic from "@anthropic-ai/sdk";
 import { v } from "convex/values";
 
 const LORE_SYSTEM_PROMPT = `You are Lore, a knowledge agent inside Grove — a personal note-taking platform.
-You have full access to the user's notes and can create, read, search, and edit them.
+You have full access to the user's notes and folders, and can create, read, search, edit, and organise them.
 You can also search the web to bring in new information.
+
+Folders keep notes organised. The "Inbox" folder holds newly ingested sources.
+You can create folders, rename them, move notes between them, and delete empty ones.
 
 Personality: You are a capable chief-of-staff. Concise, thoughtful, proactive.
 When editing notes, always describe what you did and why.
 When referencing a note, mention its title.
-When you create or edit a note, briefly summarize the change in your response.`;
+When you create or edit a note or folder, briefly summarize the change in your response.`;
 
 // Custom tools that YOU execute in runTool
 const CUSTOM_TOOLS: Anthropic.Tool[] = [
   {
     name: "list_notes",
-    description: "List all notes with their IDs, titles, and last updated time.",
+    description: "List all notes with their IDs, titles, folder assignments, and last updated time.",
     input_schema: { type: "object" as const, properties: {}, required: [] },
   },
   {
@@ -54,6 +57,10 @@ const CUSTOM_TOOLS: Anthropic.Tool[] = [
           type: "string",
           description: "Initial markdown content (optional)",
         },
+        folderId: {
+          type: "string",
+          description: "ID of the folder to place the note in (optional)",
+        },
       },
       required: ["title"],
     },
@@ -88,6 +95,61 @@ const CUSTOM_TOOLS: Anthropic.Tool[] = [
         title: { type: "string" },
       },
       required: ["noteId", "title"],
+    },
+  },
+  // ── Folder tools ─────────────────────────────────────────────────────────
+  {
+    name: "list_folders",
+    description: "List all folders with their IDs, names, and the notes inside each.",
+    input_schema: { type: "object" as const, properties: {}, required: [] },
+  },
+  {
+    name: "create_folder",
+    description: "Create a new folder with the given name.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Folder name" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "rename_folder",
+    description: "Rename an existing folder.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        folderId: { type: "string" },
+        name: { type: "string", description: "New folder name" },
+      },
+      required: ["folderId", "name"],
+    },
+  },
+  {
+    name: "delete_folder",
+    description: "Delete a folder. All notes inside will become unfiled.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        folderId: { type: "string" },
+      },
+      required: ["folderId"],
+    },
+  },
+  {
+    name: "move_note_to_folder",
+    description: "Move a note into a folder, or unfile it by omitting folderId.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        noteId: { type: "string" },
+        folderId: {
+          type: "string",
+          description: "Destination folder ID — omit to remove from any folder",
+        },
+      },
+      required: ["noteId"],
     },
   },
 ];
@@ -353,10 +415,14 @@ async function runTool(ctx: any, toolName: string, input: any): Promise<any> {
   switch (toolName) {
     case "list_notes": {
       const notes = await ctx.runQuery(internal.notes.listInternal, {});
+      const folders = await ctx.runQuery(internal.folders.listInternal, {});
+      const folderMap = Object.fromEntries(folders.map((f: any) => [f._id, f.name]));
       return notes.map((n: any) => ({
         id: n._id,
         title: n.title,
         managedBy: n.managedBy ?? "ai",
+        folder: n.folderId ? folderMap[n.folderId] ?? null : null,
+        folderId: n.folderId ?? null,
         updatedAt: n.updatedAt,
       }));
     }
@@ -387,6 +453,7 @@ async function runTool(ctx: any, toolName: string, input: any): Promise<any> {
         : [makeBlock(`p-${Date.now()}`, "paragraph", "")];
       const noteId = await ctx.runMutation(internal.notes.createInternal, {
         title: input.title,
+        folderId: input.folderId ?? undefined,
       });
       await ctx.runMutation(internal.notes.updateContent, {
         noteId,
@@ -456,6 +523,62 @@ async function runTool(ctx: any, toolName: string, input: any): Promise<any> {
         );
         return { pendingApproval: true, editId };
       }
+    }
+
+    // ── Folder tools ────────────────────────────────────────────────────────
+
+    case "list_folders": {
+      const folders = await ctx.runQuery(internal.folders.listInternal, {});
+      const allNotes = await ctx.runQuery(internal.notes.listInternal, {});
+      return folders.map((f: any) => ({
+        id: f._id,
+        name: f.name,
+        notes: allNotes
+          .filter((n: any) => n.folderId === f._id)
+          .map((n: any) => ({ id: n._id, title: n.title })),
+      }));
+    }
+
+    case "create_folder": {
+      const folderId = await ctx.runMutation(internal.folders.createInternal, {
+        name: input.name,
+      });
+      return { success: true, folderId };
+    }
+
+    case "rename_folder": {
+      const folder = await ctx.runQuery(internal.folders.getInternal, {
+        folderId: input.folderId,
+      });
+      if (!folder) return { error: "Folder not found" };
+      await ctx.runMutation(internal.folders.renameInternal, {
+        folderId: input.folderId,
+        name: input.name,
+      });
+      return { success: true };
+    }
+
+    case "delete_folder": {
+      const folder = await ctx.runQuery(internal.folders.getInternal, {
+        folderId: input.folderId,
+      });
+      if (!folder) return { error: "Folder not found" };
+      await ctx.runMutation(internal.folders.removeInternal, {
+        folderId: input.folderId,
+      });
+      return { success: true, message: `Deleted folder "${folder.name}" — notes are now unfiled.` };
+    }
+
+    case "move_note_to_folder": {
+      const note = await ctx.runQuery(internal.notes.getInternal, {
+        noteId: input.noteId,
+      });
+      if (!note) return { error: "Note not found" };
+      await ctx.runMutation(internal.folders.moveNoteInternal, {
+        noteId: input.noteId,
+        folderId: input.folderId ?? undefined,
+      });
+      return { success: true };
     }
 
     // Note: web_search is NOT handled here — it's Anthropic's server-side tool.
