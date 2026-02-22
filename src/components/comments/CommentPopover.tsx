@@ -99,7 +99,7 @@ export function CommentPopover({
         left: `${left}px`,
         background: "var(--grove-surface-2)",
         border: "1px solid var(--grove-border-2)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(141,255,168,0.04)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(137,180,255,0.04)",
       }}
     >
       {/* Selected text quote */}
@@ -130,13 +130,13 @@ export function CommentPopover({
           onClick={() => handleAIAction("improve")}
           className="flex items-center gap-1 text-[10px] px-2 py-1.5 rounded transition-colors"
           style={{
-            background: "rgba(141,255,168,0.06)",
-            border: "1px solid rgba(141,255,168,0.15)",
+            background: "rgba(137,180,255,0.06)",
+            border: "1px solid rgba(137,180,255,0.15)",
             color: "var(--grove-accent)",
             fontFamily: "var(--font-geist-mono)",
           }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(141,255,168,0.12)"}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(141,255,168,0.06)"}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(137,180,255,0.12)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(137,180,255,0.06)"}
         >
           <Sparkles size={10} />
           improve
