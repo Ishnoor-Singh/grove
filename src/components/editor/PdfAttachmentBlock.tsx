@@ -45,7 +45,7 @@ function PdfAttachmentRenderer({
       // 2. POST the file directly to Convex storage
       const response = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
+        headers: { "Content-Type": file.type || "application/pdf" },
         body: file,
       });
       if (!response.ok) throw new Error("Upload failed");

@@ -169,7 +169,7 @@ function EditorInner({
                           "after"
                         );
                       },
-                      group: "Media",
+                      group: "Attachments",
                       icon: <span>📄</span>,
                     },
                   ],
