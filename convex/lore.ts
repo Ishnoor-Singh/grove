@@ -1,13 +1,13 @@
 "use node";
 
 import { internalAction } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 import Anthropic from "@anthropic-ai/sdk";
 import { v } from "convex/values";
 
 const LORE_SYSTEM_PROMPT = `You are Lore, a knowledge agent inside Grove — a personal note-taking platform.
 You have full access to the user's notes and folders, and can create, read, search, edit, and organise them.
-You can also search the web to bring in new information.
+You can also search the web to bring in new information, and ingest URLs (web pages or YouTube videos) as notes using ingest_source.
 
 Folders keep notes organised. The "Inbox" folder holds newly ingested sources.
 You can create folders, rename them, move notes between them, and delete empty ones.
@@ -150,6 +150,18 @@ const CUSTOM_TOOLS: Anthropic.Tool[] = [
         },
       },
       required: ["noteId"],
+    },
+  },
+  {
+    name: "ingest_source",
+    description:
+      "Fetch a URL (web page or YouTube video) and create a note in the Inbox folder with the full content. Use this whenever the user shares a link they want saved or summarised.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        url: { type: "string", description: "The URL to fetch and ingest" },
+      },
+      required: ["url"],
     },
   },
 ];
@@ -579,6 +591,15 @@ async function runTool(ctx: any, toolName: string, input: any): Promise<any> {
         folderId: input.folderId ?? undefined,
       });
       return { success: true };
+    }
+
+    case "ingest_source": {
+      const noteId = await ctx.runAction(api.sources.ingest, { url: input.url });
+      return {
+        success: true,
+        noteId,
+        message: `Ingested "${input.url}" — note created in Inbox.`,
+      };
     }
 
     // Note: web_search is NOT handled here — it's Anthropic's server-side tool.
