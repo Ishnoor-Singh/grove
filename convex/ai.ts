@@ -203,7 +203,14 @@ export const generateChatResponse = internalAction({
         .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
         .join("\n");
 
-      const systemPrompt = `You are a helpful AI assistant embedded in a note-taking app called Grove.
+      const isSourceNote = !!note?.sourceUrl;
+      const systemPrompt = isSourceNote
+        ? `You are a helpful AI assistant embedded in a note-taking app called Grove.
+The current note was ingested from an external source (${note!.sourceUrl}).
+The note contains the raw source content plus a Notes section.
+Help the user understand, analyse, and discuss the source material.
+Reference specific parts of the raw content when relevant. Be concise.`
+        : `You are a helpful AI assistant embedded in a note-taking app called Grove.
 You have access to the user's current note as context.
 Reference specific parts of the note when relevant.
 Be concise and helpful.
@@ -228,6 +235,13 @@ ${args.userMessage}`;
         noteId: args.noteId,
         content: response,
       });
+
+      // For source notes, update the Notes section with conversation insights
+      if (isSourceNote) {
+        await ctx.scheduler.runAfter(0, internal.ai.updateSourceNotes, {
+          noteId: args.noteId,
+        });
+      }
     } catch (error) {
       console.error("generateChatResponse failed:", error);
     }
@@ -316,6 +330,118 @@ export const syncBlocks = internalAction({
       });
     } catch (e) {
       console.error("syncBlocks failed:", e);
+    }
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Action 5 – updateSourceNotes (rewrites "Notes" section after chat)
+// ---------------------------------------------------------------------------
+
+function makeBlock(id: string, type: string, text: string, props?: any): any {
+  return {
+    id,
+    type,
+    props: {
+      textColor: "default",
+      backgroundColor: "default",
+      textAlignment: "left",
+      ...props,
+    },
+    content: text ? [{ type: "text", text, styles: {} }] : [],
+    children: [],
+  };
+}
+
+function markdownBulletsToBlocks(markdown: string): any[] {
+  const lines = markdown.split("\n").filter((l) => l.trim());
+  return lines.map((line, i) => {
+    const id = `note-${Date.now()}-${i}`;
+    if (line.startsWith("- ") || line.startsWith("* "))
+      return makeBlock(id, "bulletListItem", line.slice(2).trim());
+    return makeBlock(id, "paragraph", line.trim());
+  });
+}
+
+function replaceNotesSection(blocks: any[], notesMarkdown: string): any[] {
+  // Find the "Notes" heading block
+  const notesIdx = blocks.findIndex(
+    (b) =>
+      b.type === "heading" &&
+      b.content?.some((c: any) => c.type === "text" && c.text === "Notes")
+  );
+  if (notesIdx === -1) {
+    // Append at the end
+    const ts = Date.now();
+    return [
+      ...blocks,
+      makeBlock(`notes-heading-${ts}`, "heading", "Notes", { level: 2 }),
+      ...markdownBulletsToBlocks(notesMarkdown),
+    ];
+  }
+
+  // Find the next heading after Notes (to preserve subsequent sections)
+  const nextHeadingIdx = blocks.findIndex(
+    (b, i) => i > notesIdx && b.type === "heading"
+  );
+
+  const before = blocks.slice(0, notesIdx + 1); // keep up to and including the Notes heading
+  const after = nextHeadingIdx !== -1 ? blocks.slice(nextHeadingIdx) : [];
+  const newNoteBlocks = markdownBulletsToBlocks(notesMarkdown);
+
+  return [...before, ...newNoteBlocks, ...after];
+}
+
+export const updateSourceNotes = internalAction({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, args) => {
+    try {
+      const note = await ctx.runQuery(internal.notes.getInternal, {
+        noteId: args.noteId,
+      });
+      if (!note?.sourceUrl || !note.content) return;
+
+      const chatHistory = await ctx.runQuery(
+        internal.chat.listByNoteInternal,
+        { noteId: args.noteId }
+      );
+      if (chatHistory.length === 0) return;
+
+      const convoText = chatHistory
+        .map((m: { role: string; content: string }) =>
+          `${m.role === "user" ? "User" : "AI"}: ${m.content}`
+        )
+        .join("\n\n");
+
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const resp = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        system:
+          "You extract concise bullet-point notes from conversations about a source. Each bullet should capture a distinct insight, question, or takeaway from the discussion. Reply with ONLY bullet points (- ...), one per line, no preamble.",
+        messages: [
+          {
+            role: "user",
+            content: `Source: ${note.sourceUrl}\n\nConversation:\n${convoText}\n\nWrite bullet-point notes capturing the key insights discussed:`,
+          },
+        ],
+      });
+
+      const notesMarkdown =
+        resp.content[0].type === "text" ? resp.content[0].text.trim() : "";
+      if (!notesMarkdown) return;
+
+      const newContent = replaceNotesSection(
+        note.content as any[],
+        notesMarkdown
+      );
+
+      await ctx.runMutation(internal.notes.updateContent, {
+        noteId: args.noteId,
+        content: newContent,
+      });
+    } catch (error) {
+      console.error("updateSourceNotes failed:", error);
     }
   },
 });
