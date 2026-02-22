@@ -11,8 +11,8 @@ export const generateUploadUrl = mutation({
 
 // Given the storageId returned in the POST response, returns the serving URL.
 export const getFileUrl = mutation({
-  args: { storageId: v.string() },
+  args: { storageId: v.id("_storage") },
   handler: async (ctx, args) => {
-    return await ctx.storage.getUrl(args.storageId as any);
+    return await ctx.storage.getUrl(args.storageId);
   },
 });

@@ -22,6 +22,7 @@ function PdfAttachmentRenderer({
   const getFileUrl = useMutation(api.files.getFileUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const hasFile = !!block.props.url;
 
@@ -59,11 +60,12 @@ function PdfAttachmentRenderer({
         props: {
           url: url ?? "",
           fileName: file.name,
-          fileSize: block.props.fileSize === 0 ? file.size : block.props.fileSize,
+          fileSize: file.size,
         },
       });
     } catch (err) {
       console.error("PDF upload failed:", err);
+      setUploadError("Upload failed. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -93,6 +95,9 @@ function PdfAttachmentRenderer({
         />
         <span>📄</span>
         <span>{uploading ? "Uploading…" : "Select a PDF file"}</span>
+        {uploadError && (
+          <span style={{ color: "#ff8080", fontSize: 12 }}>{uploadError}</span>
+        )}
         {!uploading && (
           <button
             onClick={() => fileInputRef.current?.click()}
