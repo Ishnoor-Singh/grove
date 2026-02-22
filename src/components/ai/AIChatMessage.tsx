@@ -19,7 +19,7 @@ export default function AIChatMessage({
     const el = document.querySelector(`[data-id="${blockId}"]`);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      (el as HTMLElement).style.outline = "2px solid rgba(141, 255, 168, 0.4)";
+      (el as HTMLElement).style.outline = "2px solid rgba(137, 180, 255, 0.4)";
       (el as HTMLElement).style.outlineOffset = "4px";
       setTimeout(() => {
         (el as HTMLElement).style.outline = "";

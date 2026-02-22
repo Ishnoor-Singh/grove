@@ -70,7 +70,7 @@ export default function Home() {
           style={{
             background: "var(--grove-surface-2)",
             border: "1px solid var(--grove-border-2)",
-            boxShadow: "0 0 32px rgba(141,255,168,0.06)",
+            boxShadow: "0 0 32px rgba(137,180,255,0.06)",
           }}
         >
           <FileText size={28} style={{ color: "var(--grove-accent)" }} />
@@ -113,7 +113,7 @@ export default function Home() {
           }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.background = "var(--grove-accent-glow)";
-            (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px rgba(141,255,168,0.12)";
+            (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px rgba(137,180,255,0.12)";
           }}
           onMouseLeave={e => {
             (e.currentTarget as HTMLElement).style.background = "var(--grove-accent-dim)";

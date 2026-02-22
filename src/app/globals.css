@@ -1,24 +1,22 @@
 @import "tailwindcss";
-@import "@blocknote/core/fonts/inter.css";
-@import "@blocknote/mantine/style.css";
 
 /* ─── Grove Design Tokens ───────────────────────────────────── */
 :root {
-  --grove-bg:            #060d08;
-  --grove-surface:       #0b1710;
-  --grove-surface-2:     #101e16;
-  --grove-surface-3:     #162819;
-  --grove-border:        #192c20;
-  --grove-border-2:      #223d2b;
+  --grove-bg:            #06080e;
+  --grove-surface:       #0b1018;
+  --grove-surface-2:     #0f1620;
+  --grove-surface-3:     #131d2a;
+  --grove-border:        #172338;
+  --grove-border-2:      #1c3050;
 
   --grove-text:          #e0dace;
-  --grove-text-2:        #7da08a;
-  --grove-text-3:        #3a5445;
+  --grove-text-2:        #7a9ab8;
+  --grove-text-3:        #374d68;
 
-  --grove-accent:        #8dffa8;
-  --grove-accent-dim:    rgba(141, 255, 168, 0.07);
-  --grove-accent-glow:   rgba(141, 255, 168, 0.14);
-  --grove-accent-border: rgba(141, 255, 168, 0.22);
+  --grove-accent:        #89b4ff;
+  --grove-accent-dim:    rgba(137, 180, 255, 0.07);
+  --grove-accent-glow:   rgba(137, 180, 255, 0.14);
+  --grove-accent-border: rgba(137, 180, 255, 0.22);
 }
 
 /* ─── Tailwind Theme ─────────────────────────────────────────── */
@@ -95,14 +93,14 @@ body::after {
 }
 
 .text-gradient-accent {
-  background: linear-gradient(135deg, var(--grove-accent), #5de88a);
+  background: linear-gradient(135deg, var(--grove-accent), #4a9eff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .glow-accent {
-  box-shadow: 0 0 20px var(--grove-accent-glow), 0 0 40px rgba(141, 255, 168, 0.05);
+  box-shadow: 0 0 20px var(--grove-accent-glow), 0 0 40px rgba(137, 180, 255, 0.05);
 }
 
 .border-accent-subtle {

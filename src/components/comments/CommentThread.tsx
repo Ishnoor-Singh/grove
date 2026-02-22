@@ -37,7 +37,7 @@ export function CommentThread({
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded tracking-[0.06em] uppercase"
             style={
               isAI
-                ? { background: "rgba(141,255,168,0.08)", color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }
+                ? { background: "rgba(137,180,255,0.08)", color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }
                 : { background: "rgba(128,180,255,0.08)", color: "#80b4ff", fontFamily: "var(--font-geist-mono)" }
             }
           >
@@ -127,7 +127,7 @@ export function CommentThread({
                     className="text-[10px] font-semibold px-1.5 py-0.5 rounded tracking-[0.06em] uppercase"
                     style={
                       replyIsAI
-                        ? { background: "rgba(141,255,168,0.08)", color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }
+                        ? { background: "rgba(137,180,255,0.08)", color: "var(--grove-accent)", fontFamily: "var(--font-geist-mono)" }
                         : { background: "rgba(128,180,255,0.08)", color: "#80b4ff", fontFamily: "var(--font-geist-mono)" }
                     }
                   >
