@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef } from "react";
-import ForceGraph2D from "react-force-graph-2d";
+import { ForceGraph2D } from "react-force-graph";
 import { Check, X } from "lucide-react";
 
 export default function GraphView() {
