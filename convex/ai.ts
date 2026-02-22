@@ -294,3 +294,65 @@ ${instruction}`;
     }
   },
 });
+
+// ---------------------------------------------------------------------------
+// Action 4 – syncBlocks (keeps blocks table in sync with note content)
+// ---------------------------------------------------------------------------
+
+export const syncBlocks = internalAction({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, args) => {
+    try {
+      const note = await ctx.runQuery(internal.notes.getInternal, {
+        noteId: args.noteId,
+      });
+      if (!note?.content) return;
+
+      const rawBlocks = note.content as any[];
+      const synced = flattenBlocks(rawBlocks, 0);
+      await ctx.runMutation(internal.blocks.syncFromNote, {
+        noteId: args.noteId,
+        blocks: synced,
+      });
+    } catch (e) {
+      console.error("syncBlocks failed:", e);
+    }
+  },
+});
+
+function flattenBlocks(
+  blocks: any[],
+  startOrder: number,
+  parentId?: string
+): Array<{
+  blockId: string;
+  type: string;
+  content: any;
+  props?: any;
+  parentId?: string;
+  order: number;
+  text: string;
+}> {
+  const result: ReturnType<typeof flattenBlocks> = [];
+  blocks.forEach((block, i) => {
+    const text = (block.content ?? [])
+      .filter((c: any) => c.type === "text")
+      .map((c: any) => c.text)
+      .join("");
+    result.push({
+      blockId: block.id,
+      type: block.type,
+      content: block.content,
+      props: block.props,
+      parentId,
+      order: startOrder + i,
+      text,
+    });
+    if (block.children?.length) {
+      result.push(
+        ...flattenBlocks(block.children, startOrder + i + 0.1, block.id)
+      );
+    }
+  });
+  return result;
+}

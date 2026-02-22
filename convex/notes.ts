@@ -90,6 +90,10 @@ export const update = mutation({
         lastTaggedAt: now,
       });
     }
+
+    await ctx.scheduler.runAfter(0, internal.ai.syncBlocks, {
+      noteId: args.noteId,
+    });
   },
 });
 
