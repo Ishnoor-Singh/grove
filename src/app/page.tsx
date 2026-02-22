@@ -3,20 +3,32 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Plus } from "lucide-react";
 
 export default function Home() {
   const notes = useQuery(api.notes.list);
   const createNote = useMutation(api.notes.create);
   const router = useRouter();
+  const [isMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768
+  );
 
-  // If notes exist, redirect to the most recent one
+  // If on mobile, redirect to /chat; otherwise redirect to the last note or first note
   useEffect(() => {
-    if (notes && notes.length > 0) {
-      router.push(`/note/${notes[0]._id}`);
+    if (isMobile) {
+      router.push("/chat");
+      return;
     }
-  }, [notes, router]);
+    if (notes && notes.length > 0) {
+      const lastNote = localStorage.getItem("grove:lastNote");
+      if (lastNote) {
+        router.push(`/note/${lastNote}`);
+      } else {
+        router.push(`/note/${notes[0]._id}`);
+      }
+    }
+  }, [notes, router, isMobile]);
 
   const handleCreateNote = async () => {
     const newId = await createNote();
@@ -40,8 +52,8 @@ export default function Home() {
     );
   }
 
-  // Redirecting state (notes exist)
-  if (notes.length > 0) {
+  // Redirecting state (notes exist or mobile)
+  if (notes.length > 0 || isMobile) {
     return (
       <div
         className="flex h-screen items-center justify-center"
