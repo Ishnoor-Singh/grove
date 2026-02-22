@@ -16,6 +16,8 @@ export const list = query({
       managedBy: note.managedBy ?? "ai",
       updatedAt: note.updatedAt,
       createdAt: note.createdAt,
+      folderId: note.folderId,
+      tags: note.tags,
     }));
   },
 });
@@ -35,8 +37,10 @@ export const getInternal = internalQuery({
 });
 
 export const create = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    folderId: v.optional(v.id("folders")),
+  },
+  handler: async (ctx, args) => {
     const now = Date.now();
     const noteId = await ctx.db.insert("notes", {
       title: "Untitled",
@@ -56,6 +60,7 @@ export const create = mutation({
       managedBy: "ai" as const,
       createdAt: now,
       updatedAt: now,
+      folderId: args.folderId,
     });
     return noteId;
   },
@@ -116,6 +121,14 @@ export const remove = mutation({
       .withIndex("by_noteId", (q) => q.eq("noteId", noteId))
       .collect();
     for (const tag of blockTags) {
+      await ctx.db.delete(tag._id);
+    }
+
+    const userBlockTags = await ctx.db
+      .query("userBlockTags")
+      .withIndex("by_noteId", (q) => q.eq("noteId", noteId))
+      .collect();
+    for (const tag of userBlockTags) {
       await ctx.db.delete(tag._id);
     }
 
@@ -182,6 +195,19 @@ export const createInternal = internalMutation({
   },
 });
 
+export const moveToFolder = mutation({
+  args: {
+    noteId: v.id("notes"),
+    folderId: v.optional(v.id("folders")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.noteId, {
+      folderId: args.folderId,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const updateManagement = mutation({
   args: {
     noteId: v.id("notes"),
@@ -189,5 +215,18 @@ export const updateManagement = mutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.noteId, { managedBy: args.managedBy });
+  },
+});
+
+export const updateTags = mutation({
+  args: {
+    noteId: v.id("notes"),
+    tags: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.noteId, {
+      tags: args.tags,
+      updatedAt: Date.now(),
+    });
   },
 });
