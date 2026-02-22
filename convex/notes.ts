@@ -52,6 +52,7 @@ export const create = mutation({
           children: [],
         },
       ],
+      managedBy: "ai" as const,
       createdAt: now,
       updatedAt: now,
     });
