@@ -12,6 +12,7 @@ import type * as ai from "../ai.js";
 import type * as blocks from "../blocks.js";
 import type * as chat from "../chat.js";
 import type * as comments from "../comments.js";
+import type * as folders from "../folders.js";
 import type * as lore from "../lore.js";
 import type * as loreChatMessages from "../loreChatMessages.js";
 import type * as loreConversations from "../loreConversations.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   blocks: typeof blocks;
   chat: typeof chat;
   comments: typeof comments;
+  folders: typeof folders;
   lore: typeof lore;
   loreChatMessages: typeof loreChatMessages;
   loreConversations: typeof loreConversations;
