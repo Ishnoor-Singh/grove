@@ -2,6 +2,16 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  // ── Folders ───────────────────────────────────────────────────
+  folders: defineTable({
+    name: v.string(),
+    parentId: v.optional(v.id("folders")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_parentId", ["parentId"])
+    .index("by_createdAt", ["createdAt"]),
+
   // ── Notes ─────────────────────────────────────────────────────
   notes: defineTable({
     title: v.string(),
@@ -10,9 +20,12 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
     lastTaggedAt: v.optional(v.number()),
+    folderId: v.optional(v.id("folders")),
+    tags: v.optional(v.array(v.string())),
   })
     .index("by_updatedAt", ["updatedAt"])
-    .index("by_createdAt", ["createdAt"]),
+    .index("by_createdAt", ["createdAt"])
+    .index("by_folderId", ["folderId"]),
 
   // ── Blocks (denormalized AI read model) ───────────────────────
   blocks: defineTable({
@@ -87,6 +100,16 @@ export default defineSchema({
       v.literal("counterpoint")
     ),
     confidence: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_noteId", ["noteId"])
+    .index("by_noteId_blockId", ["noteId", "blockId"]),
+
+  // ── User Block Tags ───────────────────────────────────────────
+  userBlockTags: defineTable({
+    noteId: v.id("notes"),
+    blockId: v.string(),
+    tag: v.string(),
     createdAt: v.number(),
   })
     .index("by_noteId", ["noteId"])

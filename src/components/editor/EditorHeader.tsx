@@ -1,9 +1,10 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useState } from "react";
+import NoteTagInput from "./NoteTagInput";
 
 interface EditorHeaderProps {
   noteId: string;
@@ -12,6 +13,7 @@ interface EditorHeaderProps {
 
 export default function EditorHeader({ noteId, title }: EditorHeaderProps) {
   const updateTitle = useMutation(api.notes.updateTitle);
+  const note = useQuery(api.notes.get, { noteId: noteId as Id<"notes"> });
   const [currentTitle, setCurrentTitle] = useState(title);
 
   const handleBlur = async () => {
@@ -46,12 +48,17 @@ export default function EditorHeader({ noteId, title }: EditorHeaderProps) {
           letterSpacing: "-0.01em",
         }}
       />
+
+      {/* Note-level tags */}
+      <NoteTagInput noteId={noteId} tags={note?.tags ?? []} />
+
       {/* Hairline separator */}
       <div
-        className="mt-6"
+        className="mt-4"
         style={{
           height: "1px",
-          background: "linear-gradient(to right, var(--grove-border), transparent 80%)",
+          background:
+            "linear-gradient(to right, var(--grove-border), transparent 80%)",
         }}
       />
     </div>
