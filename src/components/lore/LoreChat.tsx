@@ -17,6 +17,7 @@ export default function LoreChat({ sessionId }: LoreChatProps) {
   const send = useMutation(api.loreChatMessages.send);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sentCountRef = useRef<number>(-1);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -24,13 +25,19 @@ export default function LoreChat({ sessionId }: LoreChatProps) {
     }
   }, [messages]);
 
+  // Reset sending when a new assistant message arrives after we sent ours
   useEffect(() => {
-    if (messages?.length && messages[messages.length - 1].role === "assistant") {
+    if (!sending || !messages) return;
+    if (
+      messages.length > sentCountRef.current &&
+      messages[messages.length - 1].role === "assistant"
+    ) {
       setSending(false);
     }
-  }, [messages]);
+  }, [messages, sending]);
 
   const handleSend = async (content: string) => {
+    sentCountRef.current = messages?.length ?? 0;
     setSending(true);
     try {
       await send({ sessionId: typedId, content });

@@ -93,9 +93,9 @@ const CUSTOM_TOOLS: Anthropic.Tool[] = [
 ];
 
 // Anthropic's built-in server-side web search — no external API key needed.
-// The API executes searches automatically; we extract results from server_tool_use blocks.
+// Using web_search_20250305 (stable). web_search_20260209 requires code execution tool.
 const WEB_SEARCH_TOOL = {
-  type: "web_search_20260209" as const,
+  type: "web_search_20250305" as const,
   name: "web_search",
   max_uses: 5,
 };
@@ -205,6 +205,7 @@ export const run = internalAction({
     let thinkingContent: string | undefined;
     let finalResponse = "";
 
+    try {
     // Agentic loop
     while (true) {
       const response = await client.messages.create({
@@ -302,6 +303,16 @@ export const run = internalAction({
         // Unexpected stop reason — break to avoid infinite loop
         break;
       }
+    }
+
+    } catch (e: any) {
+      // Always save a response so the UI doesn't stay stuck on "Thinking..."
+      console.error("Lore run failed:", e);
+      await ctx.runMutation(internal.loreChatMessages.saveAssistantMessage, {
+        sessionId: args.sessionId,
+        content: `Sorry, I ran into an error: ${e?.message ?? "unknown error"}. Please try again.`,
+      });
+      return;
     }
 
     // Auto-title session after first exchange
