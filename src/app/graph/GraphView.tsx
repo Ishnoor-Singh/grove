@@ -31,12 +31,10 @@ export default function GraphView() {
   const acceptLink = useMutation(api.noteLinks.accept);
   const dismissLink = useMutation(api.noteLinks.dismiss);
 
-  const [dimensions, setDimensions] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
+    setDimensions({ width: window.innerWidth, height: window.innerHeight });
     const handleResize = () =>
       setDimensions({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener("resize", handleResize);
