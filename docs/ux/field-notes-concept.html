@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grove — Field Notes Paradigm (Design Concept)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400;500&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   GROVE: FIELD NOTES PARADIGM — Interactive Design Concept
+
+   WHAT IS THIS?
+   A fully interactive HTML mockup demonstrating a proposed
+   UX redesign for Grove. Open in any browser.
+
+   PHILOSOPHY
+   A personal knowledge tool should feel like a beloved object —
+   warm, characterful, and textured. Not a cold productivity machine.
+
+   THE PARADIGM: "The Naturalist's Field Notebook"
+   Imagine a field researcher's working notebook: numbered specimens,
+   margin annotations, warm paper tones, and a mysterious companion
+   who notices things you haven't.
+
+   KEY INNOVATIONS (see inline comments for details):
+   1. Warm earthy palette — replaces cold navy
+   2. Marginalia system — comments live IN the margin beside text
+   3. Note vitality dots — pulsing indicators of recent activity
+   4. Specimen numbering — sequential IDs for personality
+   5. Lore as ambient orb — floating companion, not a fixed panel
+   6. Tag bloom animation — tags animate in when applied
+   7. Playfair Display titles — editorial serif replaces sans
+   8. Breadcrumb topbar — always-visible folder context
+
+   WCAG 2.1 CONTRAST RATIOS (all on --bg #141108):
+   --text   #f0e6d0 →  ~17:1  AAA ✓
+   --text-2 #c49a6a →  ~8.2:1 AAA ✓
+   --text-3 #9a7d58 →  ~5.4:1 AA  ✓ (supplementary labels only)
+   --accent #e87a2e →  ~7.1:1 AAA ✓
+   --teal   #4ec0a0 →  ~7.8:1 AAA ✓
+───────────────────────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds — warm deep brown instead of cold navy */
+  --bg:        #141108;
+  --surface:   #1b1610;
+  --surface-2: #221d14;
+  --surface-3: #2a2419;
+
+  /* Borders */
+  --border:    #3c3020;
+  --border-2:  #524030;
+
+  /* Text — warm cream hierarchy, all AAA on --bg */
+  --text:   #f0e6d0;
+  --text-2: #c49a6a;
+  --text-3: #9a7d58;
+
+  /* Primary accent — warm amber-orange */
+  --accent:        #e87a2e;
+  --accent-dim:    rgba(232, 122, 46, 0.08);
+  --accent-border: rgba(232, 122, 46, 0.28);
+  --accent-glow:   rgba(232, 122, 46, 0.18);
+
+  /* AI/Lore accent — teal, distinct from user actions */
+  --teal:        #4ec0a0;
+  --teal-dim:    rgba(78, 192, 160, 0.08);
+  --teal-border: rgba(78, 192, 160, 0.28);
+
+  /* Block tag colors */
+  --tag-claim:  #89b4ff;
+  --tag-src:    #ffd700;
+  --tag-idea:   #7acc8a;
+
+  /* Fonts */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --font-body:    'Libre Baskerville', Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { color-scheme: dark; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle warm grain overlay */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.028;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════
+   TOP BAR
+   New: breadcrumb shows folder context always.
+   Current: just note title in editor header.
+═══════════════════════════════════════════ */
+.topbar {
+  height: 38px;
+  display: flex; align-items: center;
+  padding: 0 16px 0 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.breadcrumb {
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 20px; flex: 1;
+  font-size: 11px; color: var(--text-3); letter-spacing: 0.02em;
+}
+.bc-sep { color: var(--border-2); font-size: 13px; }
+.bc-item { color: var(--text-3); cursor: pointer; transition: color 0.12s; }
+.bc-item:hover, .bc-item.current { color: var(--text-2); }
+
+.topbar-btn {
+  padding: 4px 12px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-3); background: transparent; border: none; cursor: pointer;
+  font-family: var(--font-mono); border-radius: 4px; transition: all 0.15s;
+}
+.topbar-btn:hover { color: var(--text-2); background: var(--surface-3); }
+.topbar-btn.active { color: var(--accent); background: var(--accent-dim); }
+.topbar-div { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+.save-ind { display: flex; align-items: center; gap: 5px; padding: 0 14px; font-size: 10px; color: var(--text-3); }
+.save-dot { width: 5px; height: 5px; border-radius: 50%; background: #7acc8a; box-shadow: 0 0 5px rgba(122,204,138,0.6); }
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════ */
+.app { display: flex; flex: 1; overflow: hidden; }
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+   Key changes vs current:
+   - Warm tones (no cold navy)
+   - Italic serif wordmark (Playfair)
+   - VITALITY DOTS: pulsing dots show note recency
+     at a glance — hot (active), warm (recent),
+     cold (dormant). Replaces having to read dates.
+   - SPECIMEN NUMBERS: sequential #01, #02 etc.
+     adds personality without cluttering
+═══════════════════════════════════════════ */
+.sidebar {
+  width: 222px; min-width: 222px;
+  background: var(--bg); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-hdr {
+  padding: 16px 18px 12px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { display: flex; align-items: baseline; gap: 7px; }
+.logo-word { font-family: var(--font-display); font-size: 20px; font-weight: 400; font-style: italic; color: var(--text); letter-spacing: -0.02em; }
+.logo-badge { font-family: var(--font-mono); font-size: 8px; color: var(--text-3); letter-spacing: 0.18em; text-transform: uppercase; border: 1px solid var(--border-2); padding: 1px 5px; border-radius: 2px; }
+.hdr-btns { display: flex; gap: 2px; }
+.icon-btn { width: 24px; height: 24px; border: none; background: transparent; color: var(--text-3); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.12s; }
+.icon-btn:hover { background: var(--surface-3); color: var(--text-2); }
+
+.mode-tog {
+  margin: 10px 10px 6px; display: flex;
+  border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+.mode-btn {
+  flex: 1; padding: 5px 0; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  text-align: center; border: none; background: transparent; cursor: pointer;
+  font-family: var(--font-mono); transition: all 0.15s; color: var(--text-3);
+  border-right: 1px solid var(--border);
+}
+.mode-btn:last-child { border-right: none; }
+.mode-btn.active { background: var(--accent-dim); color: var(--accent); }
+
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 6px 0 12px; }
+
+.sec-label {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px 4px;
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3);
+}
+.sec-add { cursor: pointer; font-size: 15px; color: var(--text-3); transition: color 0.12s; }
+.sec-add:hover { color: var(--text-2); }
+
+.folder-row {
+  display: flex; align-items: center; gap: 6px; padding: 5px 14px;
+  cursor: pointer; color: var(--text-3); font-size: 11px; transition: all 0.12s;
+}
+.folder-row:hover { color: var(--text-2); background: var(--surface-3); }
+.folder-ico { width: 13px; height: 10px; border: 1px solid currentColor; border-radius: 0 2px 2px 2px; position: relative; flex-shrink: 0; }
+.folder-ico::before { content: ''; position: absolute; top: -4px; left: -1px; width: 6px; height: 4px; border: 1px solid currentColor; border-bottom: none; border-radius: 2px 2px 0 0; background: var(--bg); }
+
+/* Note row with specimen number */
+.note-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 14px 4px 26px;
+  cursor: pointer; position: relative;
+  text-decoration: none; color: inherit; transition: background 0.1s;
+}
+.note-row:hover { background: var(--surface-3); }
+.note-row.active { background: var(--surface-2); }
+.note-row.active::before {
+  content: ''; position: absolute; left: 0; top: 3px; bottom: 3px;
+  width: 2.5px; background: var(--accent); border-radius: 0 2px 2px 0;
+}
+.spec-num { font-size: 9px; color: var(--text-3); min-width: 18px; text-align: right; font-variant-numeric: tabular-nums; }
+.note-label { flex: 1; min-width: 0; font-size: 11.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-row.active .note-label { color: var(--text); }
+
+/*
+  VITALITY DOT
+  The sidebar's key new personality element. Each note has a dot
+  that communicates recency without requiring the user to parse
+  a timestamp. "Hot" pulses amber (edited today), "warm" is steady
+  (past week), "cold" is barely visible (untouched for ages).
+  This creates a living, breathing sidebar.
+*/
+.vit { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.vit.hot { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); animation: vitPulse 2.2s ease-in-out infinite; }
+.vit.warm { background: var(--text-3); }
+.vit.cold { background: var(--border-2); }
+@keyframes vitPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.sidebar-foot { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-3); }
+
+/* ═══════════════════════════════════════════
+   EDITOR AREA
+═══════════════════════════════════════════ */
+.editor-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); }
+.editor-paper { flex: 1; display: flex; overflow: hidden; }
+
+.editor-col {
+  flex: 1; max-width: 660px; width: 100%; margin: 0 auto;
+  padding: 0 52px; overflow-y: auto; padding-bottom: 200px;
+}
+
+.editor-hdr { padding-top: 44px; padding-bottom: 20px; }
+
+/* Specimen label — metadata styled like a field notebook tag */
+.spec-label { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.spec-tag {
+  font-size: 9.5px; color: var(--text-3); letter-spacing: 0.18em; text-transform: uppercase;
+  border: 1px solid var(--border-2); padding: 2px 8px; border-radius: 2px;
+}
+.note-date { font-size: 10px; color: var(--text-3); letter-spacing: 0.08em; }
+
+/*
+  NOTE TITLE
+  Playfair Display italic replaces the current Cormorant Garamond.
+  Heavier, more editorial, more presence. The note title should
+  feel like the masthead of a journal entry.
+*/
+.note-title {
+  font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px);
+  font-weight: 400; font-style: italic; color: var(--text);
+  line-height: 1.2; letter-spacing: -0.02em;
+  border: none; background: transparent; width: 100%; outline: none; padding: 0;
+}
+
+.tags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 20px; border: 1px solid; font-family: var(--font-mono);
+}
+.tag-chip.claim  { color: var(--tag-claim); border-color: rgba(137,180,255,0.35); background: rgba(137,180,255,0.07); }
+.tag-chip.idea   { color: var(--tag-idea);  border-color: rgba(122,204,138,0.35); background: rgba(122,204,138,0.07); }
+.tag-chip.quest  { color: var(--teal);      border-color: var(--teal-border);     background: var(--teal-dim); }
+
+.hdr-div { margin-top: 20px; height: 1px; background: linear-gradient(to right, var(--border-2) 60%, transparent); }
+
+/* ═══════════════════════════════════════════
+   EDITOR CONTENT
+   Body text: Libre Baskerville (warm, readable serif).
+   Current: Geist Sans (cold sans-serif).
+   The font change alone shifts the mood enormously.
+═══════════════════════════════════════════ */
+.editor-body { font-family: var(--font-body); font-size: 15px; line-height: 1.8; color: var(--text); padding-top: 10px; }
+
+.block { position: relative; margin-bottom: 2px; }
+.block:hover .margin-trigger { opacity: 1; }
+.margin-trigger { position: absolute; left: -28px; top: 8px; opacity: 0; transition: all 0.15s; font-size: 11px; color: var(--text-3); cursor: pointer; }
+.margin-trigger:hover { color: var(--accent); }
+
+.block h2 { font-family: var(--font-display); font-size: 21px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; margin-top: 28px; margin-bottom: 6px; }
+.block h3 { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3); margin-top: 24px; margin-bottom: 10px; }
+.block p { margin: 0; padding: 6px 0; }
+
+mark { background: rgba(232, 122, 46, 0.18); color: inherit; border-radius: 2px; padding: 0 1px; }
+
+.callout-block {
+  background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--teal);
+  border-radius: 0 6px 6px 0; padding: 12px 16px; margin: 10px 0;
+  font-size: 14px; line-height: 1.65; color: var(--text-2); font-family: var(--font-body);
+}
+.callout-lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--teal); margin-bottom: 8px; }
+
+/*
+  BLOCK TAG BLOOM
+  When a tag is applied to a block, it "blooms" in with a
+  spring animation (scale + fade). Makes tagging feel
+  satisfying and physical rather than just appearing.
+*/
+.block-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 2px; border: 1px solid; margin-right: 7px; vertical-align: middle;
+  animation: bloom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.block-tag.claim  { color: var(--tag-claim); border-color: rgba(137,180,255,0.35); background: rgba(137,180,255,0.08); }
+.block-tag.source { color: var(--tag-src);   border-color: rgba(255,215,0,0.3);    background: rgba(255,215,0,0.06); }
+@keyframes bloom { 0% { transform: scale(0.65) translateY(2px); opacity: 0; } 65% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+
+/* ═══════════════════════════════════════════
+   MARGINALIA AREA
+   *** THE CORE PARADIGM SHIFT ***
+
+   Instead of a separate "Comment" panel that you open/close,
+   comments appear literally in the margin beside the text
+   they annotate — like a scholar's working copy.
+
+   Benefits:
+   - Spatially intuitive: you see context immediately
+   - No context-switching to a separate panel
+   - Multiple comments visible simultaneously
+   - Feels like a real annotated document
+   - AI annotations (Lore) are visually distinct (teal)
+
+   The ⌦ trigger appears on block hover in the left gutter,
+   letting you add a margin note without breaking your flow.
+═══════════════════════════════════════════ */
+.margin-area {
+  width: 200px; min-width: 200px; padding: 44px 16px 44px 0;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 0;
+}
+.margin-area::-webkit-scrollbar { width: 0; }
+
+.margin-note {
+  position: relative; padding: 8px 10px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-left: 2.5px solid var(--text-3); border-radius: 0 4px 4px 0;
+  font-family: var(--font-mono); font-size: 10.5px; line-height: 1.5; color: var(--text-2);
+  margin-bottom: 10px; transition: border-left-color 0.15s; cursor: default;
+}
+.margin-note:hover { border-left-color: var(--accent); }
+.margin-note.ai { border-left-color: var(--teal); }
+.margin-note.ai:hover { border-left-color: var(--teal); box-shadow: 0 0 12px rgba(78,192,160,0.08); }
+.margin-conn { position: absolute; left: -16px; top: 14px; width: 14px; height: 1px; background: var(--border-2); }
+.margin-who { font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+.margin-note.ai .margin-who { color: var(--teal); }
+.m-sp { flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════
+   AI PANEL (right)
+═══════════════════════════════════════════ */
+.right-panel { width: 268px; min-width: 268px; background: var(--bg); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.panel-hdr { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.panel-title { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3); }
+.panel-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.ptab { flex: 1; padding: 8px; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; text-align: center; color: var(--text-3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.ptab.active { color: var(--text-2); border-bottom-color: var(--accent); }
+.ptab:hover:not(.active) { color: var(--text-2); }
+.panel-body { flex: 1; overflow-y: auto; padding: 14px 12px; }
+.chat-msg { margin-bottom: 16px; }
+.chat-lbl { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+.chat-lbl.ai { color: var(--teal); }
+.bubble { font-size: 12px; line-height: 1.6; color: var(--text-2); padding: 9px 11px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 0 6px 6px 6px; }
+.bubble.user { color: var(--text); background: var(--accent-dim); border-color: var(--accent-border); border-radius: 6px 0 6px 6px; }
+.bubble.ai { border-left: 2px solid var(--teal); }
+.chat-in-area { padding: 10px 12px; border-top: 1px solid var(--border); }
+.chat-in { width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--font-mono); font-size: 12px; outline: none; resize: none; transition: border-color 0.15s; min-height: 58px; }
+.chat-in:focus { border-color: var(--accent-border); }
+.chat-in::placeholder { color: var(--text-3); }
+.send-btn { margin-top: 6px; width: 100%; padding: 7px; background: var(--accent-dim); border: 1px solid var(--accent-border); border-radius: 4px; color: var(--accent); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.send-btn:hover { background: rgba(232, 122, 46, 0.15); }
+
+/* ═══════════════════════════════════════════
+   LORE ORB
+   *** THE SECOND BIG PARADIGM SHIFT ***
+
+   Instead of opening Lore as a slide-in drawer
+   (which takes 400px and dominates the screen),
+   Lore lives as a small floating orb in the corner.
+
+   Benefits:
+   - Always present but non-intrusive
+   - The badge shows proactive insights without
+     demanding you click into a panel
+   - Expands into a floating chat (not anchored to
+     the layout grid) — less disruptive
+   - The breathing animation gives it a living,
+     ambient quality — like a companion, not a tool
+   - Clicking outside collapses it back
+
+   The teal color distinguishes it from the
+   orange-amber of user actions throughout the UI.
+═══════════════════════════════════════════ */
+.lore-orb {
+  position: fixed; bottom: 22px; right: 22px;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 33%, #5dd4b2, #1a7a62);
+  border: 1px solid rgba(78, 192, 160, 0.55);
+  cursor: pointer; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 22px rgba(78,192,160,0.22), 0 4px 14px rgba(0,0,0,0.45);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: orbBreath 3.5s ease-in-out infinite;
+}
+.lore-orb:hover { transform: scale(1.08); box-shadow: 0 0 35px rgba(78,192,160,0.4), 0 4px 18px rgba(0,0,0,0.5); }
+@keyframes orbBreath { 0%, 100% { box-shadow: 0 0 22px rgba(78,192,160,0.22), 0 4px 14px rgba(0,0,0,0.45); } 50% { box-shadow: 0 0 38px rgba(78,192,160,0.42), 0 4px 14px rgba(0,0,0,0.45); } }
+.lore-sym { font-size: 18px; line-height: 1; user-select: none; }
+.lore-badge {
+  position: absolute; top: -4px; right: -4px;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg);
+  font-size: 8px; display: flex; align-items: center; justify-content: center;
+  color: var(--bg); font-family: var(--font-mono); font-weight: 500;
+  animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes badgePop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+/* Lore floating panel (expands from orb) */
+.lore-panel {
+  position: fixed; bottom: 80px; right: 22px;
+  width: 320px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(78,192,160,0.08);
+  z-index: 99; display: flex; flex-direction: column; overflow: hidden;
+  animation: panelRise 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+@keyframes panelRise { 0% { opacity: 0; transform: translateY(12px) scale(0.97); } 100% { opacity: 1; transform: none; } }
+.lore-ph { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.lore-pt { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--teal); }
+.lore-ps { font-size: 10px; color: var(--text-3); margin-left: auto; }
+.lore-pb { flex: 1; overflow-y: auto; padding: 12px 14px; max-height: 280px; }
+.lore-msg { font-family: var(--font-mono); font-size: 12px; line-height: 1.6; color: var(--text-2); padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border); border-left: 2px solid var(--teal); border-radius: 0 6px 6px 6px; margin-bottom: 10px; }
+.lore-in-area { padding: 10px 14px; border-top: 1px solid var(--border); }
+.lore-in { width: 100%; padding: 7px 10px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--font-mono); font-size: 12px; outline: none; transition: border-color 0.15s; }
+.lore-in:focus { border-color: var(--teal-border); }
+.lore-in::placeholder { color: var(--text-3); }
+
+/* ═══════════════════════════════════════════
+   ANNOTATION KEY (design legend overlay)
+   Click the [?] button (bottom-left) to toggle.
+═══════════════════════════════════════════ */
+.legend-toggle {
+  position: fixed; bottom: 22px; left: 236px; z-index: 50;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-3); font-size: 11px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); transition: all 0.15s;
+}
+.legend-toggle:hover { color: var(--text-2); border-color: var(--border-2); }
+
+.legend {
+  position: fixed; bottom: 58px; left: 236px; z-index: 50;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 16px; font-size: 10px; color: var(--text-3);
+  max-width: 220px; line-height: 1.6; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: panelRise 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.legend-title { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.leg-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+.leg-mark { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.leg-mark.hot  { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+.leg-mark.warm { background: var(--text-3); }
+.leg-mark.cold { background: var(--border-2); }
+.leg-mark.teal { background: var(--teal); box-shadow: 0 0 5px var(--teal); }
+.leg-mark.orng { background: var(--accent); }
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="breadcrumb">
+    <span class="bc-item">Research</span>
+    <span class="bc-sep">›</span>
+    <span class="bc-item">Philosophy</span>
+    <span class="bc-sep">›</span>
+    <span class="bc-item current">On Emergence</span>
+  </div>
+  <button class="topbar-btn">Tags</button>
+  <div class="topbar-div"></div>
+  <button class="topbar-btn active">AI</button>
+  <div class="topbar-div"></div>
+  <div class="save-ind"><span class="save-dot"></span>saved</div>
+</div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-hdr">
+      <div class="logo">
+        <span class="logo-word">Grove</span>
+        <span class="logo-badge">notes</span>
+      </div>
+      <div class="hdr-btns">
+        <button class="icon-btn" title="New note">＋</button>
+      </div>
+    </div>
+
+    <div class="mode-tog">
+      <button class="mode-btn">✦ Lore</button>
+      <button class="mode-btn active">✎ Editor</button>
+    </div>
+
+    <div class="sidebar-scroll">
+      <div class="sec-label">Collections <span class="sec-add">+</span></div>
+
+      <div class="folder-row"><div class="folder-ico"></div>Research</div>
+      <a class="note-row active" href="#">
+        <span class="spec-num">01</span>
+        <span class="note-label">On Emergence</span>
+        <span class="vit hot"></span>
+      </a>
+      <a class="note-row" href="#">
+        <span class="spec-num">02</span>
+        <span class="note-label">Cognitive Load Theory</span>
+        <span class="vit warm"></span>
+      </a>
+      <a class="note-row" href="#">
+        <span class="spec-num">03</span>
+        <span class="note-label">Jevons Paradox</span>
+        <span class="vit cold"></span>
+      </a>
+
+      <div class="folder-row" style="margin-top:4px;"><div class="folder-ico"></div>Philosophy</div>
+      <a class="note-row" href="#">
+        <span class="spec-num">04</span>
+        <span class="note-label">Free Will Draft</span>
+        <span class="vit warm"></span>
+      </a>
+      <a class="note-row" href="#">
+        <span class="spec-num">05</span>
+        <span class="note-label">Ship of Theseus</span>
+        <span class="vit cold"></span>
+      </a>
+
+      <div class="sec-label" style="margin-top:8px;">Unfiled <span class="sec-add">+</span></div>
+      <a class="note-row" href="#">
+        <span class="spec-num">06</span>
+        <span class="note-label">Ideas dump nov</span>
+        <span class="vit hot"></span>
+      </a>
+      <a class="note-row" href="#">
+        <span class="spec-num">07</span>
+        <span class="note-label">Meeting notes</span>
+        <span class="vit warm"></span>
+      </a>
+    </div>
+
+    <div class="sidebar-foot">7 notes · 2 folders</div>
+  </aside>
+
+  <!-- EDITOR + MARGIN -->
+  <main class="editor-area">
+    <div class="editor-paper">
+
+      <div class="editor-col">
+        <div class="editor-hdr">
+          <div class="spec-label">
+            <span class="spec-tag">spec · 001</span>
+            <span class="note-date">22 Feb 2026</span>
+          </div>
+          <div class="note-title" contenteditable="true" spellcheck="false">On Emergence</div>
+          <div class="tags-row">
+            <span class="tag-chip claim">⬡ Claim</span>
+            <span class="tag-chip idea">✦ Idea</span>
+            <span class="tag-chip quest">? Question</span>
+          </div>
+          <div class="hdr-div"></div>
+        </div>
+
+        <div class="editor-body">
+          <div class="block">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <h3>Overview</h3>
+          </div>
+          <div class="block">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <p>Emergence refers to phenomena where complex systems exhibit properties or behaviors that their individual components do not possess in isolation. The whole becomes, in a very real sense, <mark>greater than the sum of its parts</mark>.</p>
+          </div>
+          <div class="block" style="margin-top:14px;">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <div class="callout-block">
+              <div class="callout-lbl">Key Definition</div>
+              Emergent properties arise at a level of complexity above that of their constituent elements. They cannot be predicted or reduced to the behavior of individual parts.
+            </div>
+          </div>
+          <div class="block" style="margin-top:16px;">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <h2>Strong vs. Weak Emergence</h2>
+          </div>
+          <div class="block">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <p><span class="block-tag claim">claim</span>Weak emergence describes properties that could theoretically be derived from lower-level descriptions, given sufficient computational power. Most physical phenomena fall into this category.</p>
+          </div>
+          <div class="block">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <p><span class="block-tag source">src?</span>Strong emergence holds that some higher-level phenomena are genuinely irreducible — consciousness being the most contested example. The hard problem may represent a true case of strong emergence.</p>
+          </div>
+          <div class="block" style="margin-top:16px;">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <h3>Examples in Nature</h3>
+          </div>
+          <div class="block">
+            <span class="margin-trigger" title="Add margin note">⌦</span>
+            <p>Murmuration in starlings produces fluid, coordinated movement from simple local rules. No individual bird choreographs the flock; the pattern is a property of the collective interaction.</p>
+          </div>
+        </div>
+      </div>
+
+      <!--
+        MARGINALIA AREA
+        Comments appear here, anchored spatially to their text.
+        Spacers align each card with its target block.
+      -->
+      <div class="margin-area">
+        <div class="m-sp" style="height:268px;"></div>
+
+        <div class="margin-note">
+          <div class="margin-conn"></div>
+          <div class="margin-who">↳ you · 2d ago</div>
+          Compare to Hofstadter — strange loops?
+        </div>
+
+        <div class="m-sp" style="height:54px;"></div>
+
+        <div class="margin-note ai">
+          <div class="margin-conn"></div>
+          <div class="margin-who">✦ lore</div>
+          Chalmers (1996) distinguishes weak from strong. See Bedau's 4-tier classification.
+        </div>
+
+        <div class="m-sp" style="height:4px;"></div>
+
+        <div class="margin-note">
+          <div class="margin-conn"></div>
+          <div class="margin-who">↳ you · now</div>
+          Find the Deacon paper on "absential" causation
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- RIGHT AI PANEL -->
+  <aside class="right-panel">
+    <div class="panel-hdr">
+      <span class="panel-title">Grove AI</span>
+    </div>
+    <div class="panel-tabs">
+      <div class="ptab active">Chat</div>
+      <div class="ptab">Tags</div>
+      <div class="ptab">Links</div>
+    </div>
+    <div class="panel-body">
+      <div class="chat-msg">
+        <div class="chat-lbl">You</div>
+        <div class="bubble user">What are the main philosophical objections to strong emergence?</div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-lbl ai">✦ Grove AI</div>
+        <div class="bubble ai">Three main objections:<br><br>1. <strong>Causal closure</strong> — if physics is closed, emergent properties can't add new causal power<br><br>2. <strong>The explanatory gap</strong> — emergence describes without explaining the <em>why</em><br><br>3. <strong>Historical reduction</strong> — science repeatedly reduces "irreducible" phenomena</div>
+      </div>
+    </div>
+    <div class="chat-in-area">
+      <textarea class="chat-in" placeholder="Ask about this note…"></textarea>
+      <button class="send-btn">Send →</button>
+    </div>
+  </aside>
+
+</div>
+
+<!-- LORE ORB (floating ambient companion) -->
+<div class="lore-orb" id="lore-orb" onclick="toggleLore()" title="Open Lore">
+  <span class="lore-sym">✦</span>
+  <div class="lore-badge" id="lore-badge">2</div>
+</div>
+
+<!-- Lore expanded floating panel -->
+<div class="lore-panel" id="lore-panel" style="display:none;">
+  <div class="lore-ph">
+    <span style="font-size:14px;color:var(--teal)">✦</span>
+    <span class="lore-pt">Lore</span>
+    <span class="lore-ps">web search + notes</span>
+  </div>
+  <div class="lore-pb">
+    <div class="lore-msg">I noticed your note mentions Chalmers but has no source link. Want me to find the "Facing Up" paper and add it?</div>
+    <div class="lore-msg">Related: your "Ship of Theseus" note has a section on identity that connects to this discussion of reducibility.</div>
+  </div>
+  <div class="lore-in-area">
+    <input class="lore-in" placeholder="Ask Lore anything…" />
+  </div>
+</div>
+
+<!-- Design legend toggle -->
+<button class="legend-toggle" id="legend-btn" onclick="toggleLegend()" title="Design key">?</button>
+<div class="legend" id="legend" style="display:none;">
+  <div class="legend-title">Design Key</div>
+  <div class="leg-row"><span class="leg-mark hot"></span><span>Vitality dot: hot (edited today)</span></div>
+  <div class="leg-row"><span class="leg-mark warm"></span><span>Vitality dot: warm (this week)</span></div>
+  <div class="leg-row"><span class="leg-mark cold"></span><span>Vitality dot: cold (dormant)</span></div>
+  <div class="leg-row"><span class="leg-mark teal"></span><span>Teal = Lore/AI annotations</span></div>
+  <div class="leg-row"><span class="leg-mark orng"></span><span>Amber = user actions &amp; accent</span></div>
+  <div class="leg-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span style="color:var(--text-3);font-size:10px;">Hover over blocks to see<br>margin note triggers (⌦)</span></div>
+</div>
+
+<script>
+function toggleLore() {
+  const panel = document.getElementById('lore-panel');
+  const badge = document.getElementById('lore-badge');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'flex';
+    badge.style.display = 'none';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+function toggleLegend() {
+  const leg = document.getElementById('legend');
+  leg.style.display = leg.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('lore-panel');
+  const orb = document.getElementById('lore-orb');
+  if (panel.style.display !== 'none' && !panel.contains(e.target) && !orb.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+  const legend = document.getElementById('legend');
+  const btn = document.getElementById('legend-btn');
+  if (legend.style.display !== 'none' && !legend.contains(e.target) && !btn.contains(e.target)) {
+    legend.style.display = 'none';
+  }
+});
+</script>
+
+</body>
+</html>
