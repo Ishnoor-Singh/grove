@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grove — Fresh Concept</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+
+/*
+  GROVE — FRESH CONCEPT
+  ─────────────────────────────────────────────────────────────
+  Design Philosophy: "Deep Night"
+
+  A personal knowledge tool should have an identity. This one
+  draws from the aesthetic of a well-designed dark IDE — precise,
+  calm, and quietly alive — but elevated with editorial typography
+  and jewel-tone colour.
+
+  Typography stack:
+  · Cormorant Garamond   — note titles, serif display (dramatic weight)
+  · Syne                  — all UI chrome (geometric, distinctive)
+  · Lora                  — editor body text (warm reading serif)
+  · JetBrains Mono        — metadata, tags, timestamps
+
+  Color system:
+  · Deep indigo-black base with barely-there blue depth
+  · Primary accent: indigo #6366f1 (vivid, modern, rare in note apps)
+  · Lore/AI accent: rose #f43f5e (warm, distinct from user actions)
+  · Text: subtly purple-tinted white (#eeedf5)
+
+  Layout changes vs current Grove:
+  · AI panel is a floating overlay (doesn't compress editor width)
+  · Sidebar narrowed to 210px
+  · Status bar at the bottom (metadata lives there)
+  · Editor content centered with max-width — always the right reading width
+  · Lore button moves to sidebar footer
+
+  WCAG contrast:
+  · --text #eeedf5 on --bg #070710: ~16:1 AAA ✓
+  · --text-2 #8b8aaa on --bg: ~6.2:1 AA ✓
+  · --accent #6366f1 on --bg: ~5.8:1 AA ✓
+  · --rose #f43f5e on --bg: ~5.1:1 AA ✓
+*/
+
+:root {
+  --bg:        #070710;
+  --surface:   #0b0b1c;
+  --surface-2: #0f0f22;
+  --surface-3: #141428;
+  --border:    #1c1c32;
+  --border-2:  #25253e;
+
+  --text:   #eeedf5;
+  --text-2: #8b8aaa;
+  --text-3: #4a4965;
+
+  --accent:        #6366f1;
+  --accent-dim:    rgba(99, 102, 241, 0.10);
+  --accent-glow:   rgba(99, 102, 241, 0.22);
+  --accent-border: rgba(99, 102, 241, 0.28);
+
+  --rose:        #f43f5e;
+  --rose-dim:    rgba(244, 63, 94, 0.08);
+  --rose-border: rgba(244, 63, 94, 0.25);
+
+  --green: #34d399;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-ui:      'Syne', system-ui, sans-serif;
+  --font-body:    'Lora', Georgia, serif;
+  --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { color-scheme: dark; }
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 65% 55% at 20% 15%, rgba(99, 102, 241, 0.09) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 45% at 80% 85%, rgba(244, 63, 94, 0.06) 0%, transparent 65%);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Film-grain texture */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.80' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+/* ─── STAGGERED PAGE LOAD ──────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sidebar { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both 0.05s; }
+.editor-area { animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both 0.1s; }
+.statusbar { animation: fadeUp 0.4s ease both 0.3s; }
+
+/* ─── APP LAYOUT ──────────────────────────────────────────── */
+.app { display: flex; flex: 1; overflow: hidden; }
+
+/* ─── SIDEBAR ─────────────────────────────────────────────── */
+.sidebar {
+  width: 210px; min-width: 210px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Accent shimmer on sidebar right edge */
+.sidebar::after {
+  content: '';
+  position: absolute; right: -1px; top: 15%; bottom: 15%;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ─── SIDEBAR HEADER ──────────────────────────────────────── */
+.sidebar-hdr {
+  padding: 20px 16px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin-bottom: 14px;
+}
+
+/* Mode toggle — compact, sits right under wordmark */
+.mode-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  padding: 2px;
+  gap: 2px;
+}
+.mode-btn {
+  flex: 1; padding: 5px 0;
+  font-family: var(--font-ui);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border: none; background: transparent; cursor: pointer;
+  border-radius: 4px; transition: all 0.18s;
+  color: var(--text-3);
+}
+.mode-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+.mode-btn:not(.active):hover { color: var(--text-2); background: var(--surface-3); }
+
+/* ─── SIDEBAR NAV ─────────────────────────────────────────── */
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 10px 0; }
+
+.section-label {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px 4px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.section-add {
+  font-size: 14px; font-weight: 400; cursor: pointer; color: var(--text-3);
+  transition: color 0.12s; line-height: 1;
+}
+.section-add:hover { color: var(--accent); }
+
+/* Folder row */
+.folder-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 16px; cursor: pointer; color: var(--text-2);
+  font-size: 11.5px; font-weight: 500; transition: all 0.12s;
+}
+.folder-row:hover { color: var(--text); background: var(--surface-2); }
+
+/* Custom folder icon */
+.fi {
+  width: 14px; height: 11px; border: 1.5px solid currentColor;
+  border-radius: 0 3px 3px 3px; position: relative; flex-shrink: 0;
+}
+.fi::before {
+  content: ''; position: absolute; top: -4px; left: -2px;
+  width: 7px; height: 4px; border: 1.5px solid currentColor;
+  border-bottom: none; border-radius: 3px 3px 0 0; background: var(--surface);
+}
+.folder-row:hover .fi::before { background: var(--surface-2); }
+
+/* Note row */
+.note-row {
+  display: flex; align-items: flex-start; gap: 0;
+  padding: 8px 16px 8px 24px;
+  cursor: pointer; text-decoration: none; color: inherit;
+  position: relative; transition: background 0.1s;
+}
+.note-row:hover { background: var(--surface-2); }
+.note-row.active { background: var(--surface-2); }
+
+/* Accent left bar for active note — glows */
+.note-row.active::before {
+  content: '';
+  position: absolute; left: 0; top: 5px; bottom: 5px;
+  width: 2px; background: var(--accent);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.note-text { flex: 1; min-width: 0; }
+.note-name {
+  font-size: 12px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-2); line-height: 1.3;
+  transition: color 0.12s;
+}
+.note-row.active .note-name, .note-row:hover .note-name { color: var(--text); }
+
+.note-meta {
+  font-family: var(--font-mono);
+  font-size: 9.5px; color: var(--text-3); margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* Recency dot — right side of note row */
+.rdot {
+  width: 5px; height: 5px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 4px;
+}
+.rdot.hot  { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); animation: dotPulse 2s ease-in-out infinite; }
+.rdot.warm { background: var(--text-3); }
+.rdot.cold { background: var(--border-2); }
+@keyframes dotPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Source ingestion input */
+.ingest-area {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+}
+.ingest-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 6px; display: flex; align-items: center; gap: 5px;
+}
+.ingest-row { display: flex; gap: 6px; }
+.ingest-input {
+  flex: 1; min-width: 0; padding: 6px 9px;
+  background: var(--bg); border: 1px solid var(--border-2);
+  border-radius: 5px; color: var(--text);
+  font-family: var(--font-mono); font-size: 10.5px; outline: none;
+  transition: border-color 0.15s;
+}
+.ingest-input:focus { border-color: var(--accent-border); }
+.ingest-input::placeholder { color: var(--text-3); }
+.ingest-btn {
+  width: 28px; height: 28px; border-radius: 5px; border: none;
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
+  color: var(--accent); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-size: 14px; transition: all 0.15s; flex-shrink: 0;
+}
+.ingest-btn:hover { background: var(--accent-glow); }
+
+/* Sidebar footer — Lore button lives here */
+.sidebar-foot {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 6px;
+}
+.lore-sidebar-btn {
+  flex: 1; padding: 7px 10px;
+  background: var(--rose-dim); border: 1px solid var(--rose-border);
+  border-radius: 6px; color: var(--rose);
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.18s;
+}
+.lore-sidebar-btn:hover { background: rgba(244, 63, 94, 0.14); }
+.lore-sidebar-btn.active { background: var(--rose); color: #fff; border-color: var(--rose); }
+.new-note-btn {
+  width: 34px; border-radius: 6px; border: 1px solid var(--border-2);
+  background: var(--surface-2); color: var(--text-2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: all 0.15s;
+}
+.new-note-btn:hover { border-color: var(--accent-border); color: var(--accent); background: var(--accent-dim); }
+
+/* ─── EDITOR AREA ─────────────────────────────────────────── */
+.editor-area {
+  flex: 1;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+  position: relative;
+}
+
+/* Subtle warm glow in the editor center — like a lamp */
+.editor-area::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 45%, rgba(99,102,241,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.editor-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 0;
+}
+
+/* Editor column — always centered, always the right reading width */
+.editor-inner {
+  max-width: 720px; width: 100%;
+  margin: 0 auto; padding: 52px 64px 180px;
+}
+
+/* ─── EDITOR HEADER ──────────────────────────────────────── */
+.note-breadcrumb {
+  font-family: var(--font-mono); font-size: 10px; color: var(--text-3);
+  letter-spacing: 0.05em; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 7px;
+  animation: fadeUp 0.5s ease both 0.2s;
+}
+.bc-sep { color: var(--border-2); }
+.bc-item { cursor: pointer; transition: color 0.12s; }
+.bc-item:hover { color: var(--text-2); }
+
+/*
+  THE TITLE — the hero of every note.
+  Cormorant Garamond at this size is extraordinary. It's not just
+  a title, it's a declaration. The italic weight adds energy.
+*/
+.note-title-editor {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 5vw, 56px);
+  font-weight: 400; font-style: italic;
+  color: var(--text);
+  line-height: 1.15; letter-spacing: -0.02em;
+  border: none; background: transparent; width: 100%;
+  outline: none; padding: 0;
+  animation: fadeUp 0.55s ease both 0.25s;
+  caret-color: var(--accent);
+}
+.note-title-editor::placeholder { color: var(--text-3); font-style: italic; }
+
+/* Tags row */
+.tags-row {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 16px;
+  animation: fadeUp 0.55s ease both 0.3s;
+}
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 3px 9px;
+  border-radius: 4px; border: 1px solid; cursor: default;
+}
+.tag-chip.claim  { color: #93c5fd; border-color: rgba(147,197,253,0.28); background: rgba(147,197,253,0.07); }
+.tag-chip.idea   { color: #6ee7b7; border-color: rgba(110,231,183,0.28); background: rgba(110,231,183,0.07); }
+.tag-chip.source { color: #fcd34d; border-color: rgba(252,211,77,0.28);  background: rgba(252,211,77,0.06); }
+.tag-chip.quest  { color: #c4b5fd; border-color: rgba(196,181,253,0.28); background: rgba(196,181,253,0.07); }
+
+/* Hairline divider after header */
+.hdr-rule {
+  margin-top: 22px;
+  height: 1px;
+  background: linear-gradient(to right, var(--border-2) 0%, transparent 75%);
+  animation: fadeUp 0.4s ease both 0.35s;
+}
+
+/* ─── EDITOR BODY ─────────────────────────────────────────── */
+.editor-body {
+  font-family: var(--font-body);
+  font-size: 15.5px; line-height: 1.82; color: var(--text);
+  padding-top: 14px;
+  animation: fadeUp 0.6s ease both 0.38s;
+}
+
+.block { position: relative; }
+.block p { padding: 5px 0; margin: 0; }
+
+.block h2 {
+  font-family: var(--font-display);
+  font-size: 24px; font-weight: 500;
+  color: var(--text); letter-spacing: -0.01em;
+  margin: 28px 0 6px; line-height: 1.3;
+}
+.block h3 {
+  font-family: var(--font-ui);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--text-3);
+  margin: 24px 0 10px;
+}
+
+mark {
+  background: rgba(99, 102, 241, 0.18);
+  color: inherit; border-radius: 2px; padding: 0 2px;
+}
+
+/* Callout block */
+.callout {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-left: 3px solid var(--rose);
+  border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 12px 0;
+  font-size: 14.5px; line-height: 1.7; color: var(--text-2);
+  font-family: var(--font-body);
+}
+.callout-type {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--rose); margin-bottom: 8px;
+}
+
+/* Block tags — bloom in */
+.btag {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 2px 6px;
+  border-radius: 3px; border: 1px solid; margin-right: 6px;
+  vertical-align: middle;
+  animation: tagBloom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.btag.claim  { color: #93c5fd; border-color: rgba(147,197,253,0.32); background: rgba(147,197,253,0.08); }
+.btag.source { color: #fcd34d; border-color: rgba(252,211,77,0.28);  background: rgba(252,211,77,0.06); }
+
+@keyframes tagBloom {
+  0%   { transform: scale(0.6) translateY(3px); opacity: 0; }
+  70%  { transform: scale(1.06) translateY(0); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ─── AI PANEL (floating overlay, not in layout flow) ─────── */
+/*
+  KEY LAYOUT CHANGE: the AI panel is position:fixed.
+  It slides over the editor without compressing it.
+  This means the editor NEVER loses width — you always
+  have the full reading experience regardless of AI state.
+*/
+.ai-panel {
+  position: fixed; top: 0; right: 0; bottom: 32px; /* above status bar */
+  width: 300px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 40;
+  animation: slideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.4);
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.ai-panel-hdr {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ai-panel-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--text-3);
+  display: flex; align-items: center; gap: 6px;
+}
+.ai-sparkle { color: var(--accent); font-size: 12px; }
+
+.ai-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.ai-tab {
+  flex: 1; padding: 8px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  text-align: center; color: var(--text-3); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+.ai-tab.active { color: var(--text-2); border-bottom-color: var(--accent); }
+.ai-tab:hover:not(.active) { color: var(--text-2); }
+
+.ai-msgs { flex: 1; overflow-y: auto; padding: 14px 12px; }
+.ai-msg { margin-bottom: 18px; }
+.ai-msg-lbl {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 5px;
+}
+.ai-msg-lbl.ai { color: var(--accent); }
+
+.ai-bubble {
+  font-size: 12px; font-family: var(--font-body);
+  line-height: 1.65; color: var(--text-2);
+  padding: 10px 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 0 8px 8px 8px;
+}
+.ai-bubble.user {
+  color: var(--text); font-family: var(--font-body);
+  background: var(--accent-dim); border-color: var(--accent-border);
+  border-radius: 8px 0 8px 8px;
+}
+.ai-bubble.assistant { border-left: 2px solid var(--accent); }
+
+.ai-input-area { padding: 10px 12px; border-top: 1px solid var(--border); }
+.ai-textarea {
+  width: 100%; padding: 9px 11px; resize: none; min-height: 62px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text);
+  font-family: var(--font-body); font-size: 12.5px;
+  outline: none; transition: border-color 0.15s; line-height: 1.5;
+}
+.ai-textarea:focus { border-color: var(--accent-border); }
+.ai-textarea::placeholder { color: var(--text-3); }
+.ai-send {
+  margin-top: 6px; width: 100%; padding: 7px;
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
+  border-radius: 5px; color: var(--accent);
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  transition: all 0.15s;
+}
+.ai-send:hover { background: var(--accent-glow); }
+
+/* ─── AI TOGGLE BUTTON (replaces old top-right toolbar) ─────
+   Now lives as a fixed button at the bottom-right corner
+   of the editor area. Much less intrusive.
+*/
+.ai-toggle {
+  position: fixed; bottom: 44px; right: 16px;
+  padding: 7px 14px;
+  background: var(--surface-2); border: 1px solid var(--border-2);
+  border-radius: 20px; color: var(--text-2);
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1);
+  z-index: 39;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.ai-toggle:hover {
+  border-color: var(--accent-border); color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 4px 20px rgba(99,102,241,0.2);
+  transform: translateY(-1px);
+}
+.ai-toggle-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+/* ─── STATUS BAR ─────────────────────────────────────────────
+   Replaces sidebar footer. A thin VS Code-style bar at
+   the very bottom — metadata lives here, out of the way.
+*/
+.statusbar {
+  height: 32px; flex-shrink: 0;
+  background: var(--accent);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 16px;
+  z-index: 50;
+}
+.status-item {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.85); letter-spacing: 0.05em;
+  display: flex; align-items: center; gap: 5px;
+}
+.status-sep { color: rgba(255,255,255,0.3); }
+.status-spacer { flex: 1; }
+.save-status {
+  font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.9);
+  display: flex; align-items: center; gap: 5px;
+}
+.save-indicator {
+  width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 5px rgba(255,255,255,0.6);
+}
+
+/* ─── NOTE LIST ANIMATION ─────────────────────────────────── */
+.note-row { animation: fadeUp 0.4s ease both; }
+.note-row:nth-child(1) { animation-delay: 0.12s; }
+.note-row:nth-child(2) { animation-delay: 0.17s; }
+.note-row:nth-child(3) { animation-delay: 0.22s; }
+.note-row:nth-child(4) { animation-delay: 0.27s; }
+.note-row:nth-child(5) { animation-delay: 0.32s; }
+.note-row:nth-child(6) { animation-delay: 0.37s; }
+.note-row:nth-child(7) { animation-delay: 0.42s; }
+
+/* ─── LORE EXPANDED (fullscreen floating panel like current) ─ */
+.lore-panel {
+  position: fixed; top: 0; right: 0; width: 400px; bottom: 32px;
+  background: var(--surface); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 45;
+  box-shadow: -12px 0 48px rgba(0,0,0,0.5);
+  animation: slideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.lore-hdr {
+  padding: 18px 18px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.lore-icon { font-size: 16px; color: var(--rose); }
+.lore-title { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--rose); }
+.lore-sub { font-size: 10px; color: var(--text-3); margin-left: auto; letter-spacing: 0.05em; }
+.lore-close {
+  width: 24px; height: 24px; border-radius: 4px; border: none;
+  background: transparent; color: var(--text-3); cursor: pointer;
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: all 0.12s;
+}
+.lore-close:hover { background: var(--surface-3); color: var(--text-2); }
+.lore-body { flex: 1; overflow-y: auto; padding: 16px 18px; }
+.lore-msg {
+  font-family: var(--font-body); font-size: 13px; line-height: 1.7; color: var(--text-2);
+  padding: 10px 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-left: 2px solid var(--rose);
+  border-radius: 0 8px 8px 8px; margin-bottom: 14px;
+}
+.lore-in-area { padding: 12px 18px; border-top: 1px solid var(--border); }
+.lore-in {
+  width: 100%; padding: 9px 12px; border-radius: 6px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--font-body); font-size: 13px;
+  outline: none; transition: border-color 0.15s;
+}
+.lore-in:focus { border-color: var(--rose-border); }
+.lore-in::placeholder { color: var(--text-3); }
+
+/* ─── TOOLTIP: shows on ⌦ trigger hover ──────────────────── */
+.hover-tip {
+  position: absolute; left: -36px; top: 8px;
+  font-size: 11px; color: var(--text-3); opacity: 0;
+  cursor: pointer; transition: all 0.12s;
+}
+.block:hover .hover-tip { opacity: 1; }
+.hover-tip:hover { color: var(--accent); }
+
+</style>
+</head>
+<body>
+
+<!-- ═══ APP ════════════════════════════════════════════════════ -->
+<div class="app">
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-hdr">
+      <!-- Wordmark: Cormorant Garamond italic — Grove as a beautiful name -->
+      <div class="wordmark">Grove</div>
+
+      <div class="mode-toggle">
+        <button class="mode-btn">Lore</button>
+        <button class="mode-btn active">Editor</button>
+      </div>
+    </div>
+
+    <div class="sidebar-scroll">
+
+      <div class="section-label">Folders <span class="section-add">+</span></div>
+
+      <div class="folder-row">
+        <div class="fi"></div> Research
+      </div>
+
+      <a class="note-row active" href="#">
+        <div class="note-text">
+          <div class="note-name">On Emergence</div>
+          <div class="note-meta">today · 3 min read</div>
+        </div>
+        <span class="rdot hot"></span>
+      </a>
+      <a class="note-row" href="#">
+        <div class="note-text">
+          <div class="note-name">Cognitive Load Theory</div>
+          <div class="note-meta">2 days ago</div>
+        </div>
+        <span class="rdot warm"></span>
+      </a>
+      <a class="note-row" href="#">
+        <div class="note-text">
+          <div class="note-name">Jevons Paradox</div>
+          <div class="note-meta">2 weeks ago</div>
+        </div>
+        <span class="rdot cold"></span>
+      </a>
+
+      <div class="folder-row" style="margin-top:6px;">
+        <div class="fi"></div> Philosophy
+      </div>
+
+      <a class="note-row" href="#">
+        <div class="note-text">
+          <div class="note-name">Free Will Draft</div>
+          <div class="note-meta">4 days ago</div>
+        </div>
+        <span class="rdot warm"></span>
+      </a>
+      <a class="note-row" href="#">
+        <div class="note-text">
+          <div class="note-name">Ship of Theseus</div>
+          <div class="note-meta">1 month ago</div>
+        </div>
+        <span class="rdot cold"></span>
+      </a>
+
+      <div class="section-label" style="margin-top:10px;">Unfiled <span class="section-add">+</span></div>
+
+      <a class="note-row" href="#">
+        <div class="note-text">
+          <div class="note-name">Ideas dump nov</div>
+          <div class="note-meta">today</div>
+        </div>
+        <span class="rdot hot"></span>
+      </a>
+      <a class="note-row" href="#">
+        <div class="note-text">
+          <div class="note-name">Meeting notes</div>
+          <div class="note-meta">yesterday</div>
+        </div>
+        <span class="rdot warm"></span>
+      </a>
+
+    </div>
+
+    <!-- Source ingestion — in sidebar just above footer -->
+    <div class="ingest-area">
+      <div class="ingest-label">↳ Ingest URL</div>
+      <div class="ingest-row">
+        <input class="ingest-input" type="url" placeholder="Paste URL…" />
+        <button class="ingest-btn" title="Ingest">→</button>
+      </div>
+    </div>
+
+    <!-- Footer: Lore button + new note -->
+    <div class="sidebar-foot">
+      <button class="lore-sidebar-btn" id="lore-btn" onclick="toggleLore()">
+        ✦ Lore
+      </button>
+      <button class="new-note-btn" title="New note">+</button>
+    </div>
+  </aside>
+
+  <!-- ─── EDITOR ───────────────────────────────────────────── -->
+  <main class="editor-area">
+    <div class="editor-scroll">
+      <div class="editor-inner">
+
+        <!-- Breadcrumb -->
+        <div class="note-breadcrumb">
+          <span class="bc-item">Research</span>
+          <span class="bc-sep">›</span>
+          <span class="bc-item">On Emergence</span>
+        </div>
+
+        <!-- Note title — the hero -->
+        <div class="note-title-editor" contenteditable="true" spellcheck="false">
+          On Emergence
+        </div>
+
+        <!-- Note tags -->
+        <div class="tags-row">
+          <span class="tag-chip claim">⬡ Claim</span>
+          <span class="tag-chip idea">✦ Idea</span>
+          <span class="tag-chip quest">? Question</span>
+        </div>
+
+        <div class="hdr-rule"></div>
+
+        <!-- Body content in Lora — warm, readable -->
+        <div class="editor-body">
+
+          <div class="block">
+            <span class="hover-tip" title="Add comment">⌦</span>
+            <h3>Overview</h3>
+          </div>
+
+          <div class="block">
+            <span class="hover-tip" title="Add comment">⌦</span>
+            <p>Emergence refers to phenomena where complex systems exhibit properties or behaviors that their individual components do not possess in isolation. The whole becomes, in a very real sense, <mark>greater than the sum of its parts</mark>.</p>
+          </div>
+
+          <div class="block" style="margin-top:12px;">
+            <span class="hover-tip" title="Add comment">⌦</span>
+            <div class="callout">
+              <div class="callout-type">Key Definition</div>
+              Emergent properties arise at a level of complexity above that of their constituent elements. They cannot be predicted or reduced to the behavior of individual parts.
+            </div>
+          </div>
+
+          <div class="block" style="margin-top:12px;">
+            <span class="hover-tip" title="Add comment">⌦</span>
+            <h2>Strong vs. Weak Emergence</h2>
+          </div>
+
+          <div class="block">
+            <span class="hover-tip" title="Add comment">⌦</span>
+            <p><span class="btag claim">claim</span>Weak emergence describes properties that could theoretically be derived from lower-level descriptions, given sufficient computational power. Most physical phenomena fall into this category.</p>
+          </div>
+
+          <div class="block">
+            <span class="hover-tip" title="Add comment">⌦</span>
+            <p><span class="btag source">src?</span>Strong emergence holds that some higher-level phenomena are genuinely irreducible — consciousness being the most contested example. The hard problem may represent a true case of strong emergence.</p>
+          </div>
+
+          <div class="block" style="margin-top:14px;">
+            <h3>Examples in Nature</h3>
+          </div>
+
+          <div class="block">
+            <span class="hover-tip" title="Add comment">⌦</span>
+            <p>Murmuration in starlings produces fluid, coordinated movement from simple local rules. No individual bird choreographs the flock; the pattern is a property of the collective interaction.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!-- ─── AI PANEL (floating overlay) ─────────────────────────── -->
+<aside class="ai-panel" id="ai-panel">
+  <div class="ai-panel-hdr">
+    <div class="ai-panel-title">
+      <span class="ai-sparkle">✦</span> Grove AI
+    </div>
+  </div>
+  <div class="ai-tabs">
+    <div class="ai-tab active">Chat</div>
+    <div class="ai-tab">Tags</div>
+    <div class="ai-tab">Links</div>
+  </div>
+  <div class="ai-msgs">
+    <div class="ai-msg">
+      <div class="ai-msg-lbl">You</div>
+      <div class="ai-bubble user">What are the main philosophical objections to strong emergence?</div>
+    </div>
+    <div class="ai-msg">
+      <div class="ai-msg-lbl ai">✦ Grove AI</div>
+      <div class="ai-bubble assistant">
+        Three main objections:<br><br>
+        1. <strong>Causal closure</strong> — if physics is causally closed, emergent properties can't add new causal power<br><br>
+        2. <strong>The explanatory gap</strong> — emergence describes without explaining <em>why</em> higher-level properties arise<br><br>
+        3. <strong>Historical reduction</strong> — science has repeatedly reduced "irreducible" phenomena
+      </div>
+    </div>
+  </div>
+  <div class="ai-input-area">
+    <textarea class="ai-textarea" placeholder="Ask about this note…"></textarea>
+    <button class="ai-send">Send →</button>
+  </div>
+</aside>
+
+<!-- ─── LORE PANEL (full height, slides in from right) ────── -->
+<aside class="lore-panel" id="lore-panel" style="display:none;">
+  <div class="lore-hdr">
+    <span class="lore-icon">✦</span>
+    <span class="lore-title">Lore</span>
+    <span class="lore-sub">web search + notes</span>
+    <button class="lore-close" onclick="closeLore()">✕</button>
+  </div>
+  <div class="lore-body">
+    <div class="lore-msg">
+      Your note mentions Chalmers but has no source link. Want me to find the "Facing Up" paper and add it as a reference?
+    </div>
+    <div class="lore-msg">
+      Related: your "Ship of Theseus" note discusses identity persistence — it connects to the reducibility section here. Should I link them?
+    </div>
+  </div>
+  <div class="lore-in-area">
+    <input class="lore-in" placeholder="Ask Lore anything…" />
+  </div>
+</aside>
+
+<!-- ─── AI TOGGLE BUTTON (bottom-right, unobtrusive) ─────── -->
+<button class="ai-toggle" id="ai-toggle" onclick="toggleAI()">
+  <span class="ai-toggle-dot"></span>
+  Grove AI
+</button>
+
+<!-- ─── STATUS BAR ───────────────────────────────────────────
+  Thin bar at the very bottom — like VS Code.
+  Metadata lives here: note stats, save status, folder path.
+-->
+<div class="statusbar">
+  <div class="status-item">Research › Philosophy</div>
+  <div class="status-sep">·</div>
+  <div class="status-item">7 notes</div>
+  <div class="status-sep">·</div>
+  <div class="status-item">482 words</div>
+  <div class="status-spacer"></div>
+  <div class="save-status">
+    <span class="save-indicator"></span>
+    saved · 22 Feb 2026
+  </div>
+</div>
+
+<script>
+let aiVisible = true;
+let loreVisible = false;
+
+function toggleAI() {
+  const panel = document.getElementById('ai-panel');
+  aiVisible = !aiVisible;
+  panel.style.display = aiVisible ? 'flex' : 'none';
+}
+
+function toggleLore() {
+  loreVisible = !loreVisible;
+  const lore = document.getElementById('lore-panel');
+  const btn = document.getElementById('lore-btn');
+  lore.style.display = loreVisible ? 'flex' : 'none';
+  btn.classList.toggle('active', loreVisible);
+}
+
+function closeLore() {
+  loreVisible = false;
+  document.getElementById('lore-panel').style.display = 'none';
+  document.getElementById('lore-btn').classList.remove('active');
+}
+
+// Tab switching (AI panel)
+document.querySelectorAll('.ai-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.ai-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+</script>
+
+</body>
+</html>
