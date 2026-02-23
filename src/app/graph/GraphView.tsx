@@ -3,9 +3,26 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ForceGraph2D } from "react-force-graph";
 import { Check, X } from "lucide-react";
+
+interface GraphNode {
+  id: string;
+  name: string;
+  val: number;
+  color: string;
+  x?: number;
+  y?: number;
+}
+
+interface GraphLink {
+  id: string;
+  source: string;
+  target: string;
+  status: string;
+  color: string;
+}
 
 export default function GraphView() {
   const router = useRouter();
@@ -13,21 +30,32 @@ export default function GraphView() {
   const links = useQuery(api.noteLinks.list);
   const acceptLink = useMutation(api.noteLinks.accept);
   const dismissLink = useMutation(api.noteLinks.dismiss);
-  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [dimensions, setDimensions] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    const handleResize = () =>
+      setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const graphData = useMemo(() => {
     if (!notes || !links) return { nodes: [], links: [] };
 
     const noteIdSet = new Set(notes.map((n) => n._id));
 
-    const nodes = notes.map((note) => ({
+    const nodes: GraphNode[] = notes.map((note) => ({
       id: note._id,
       name: note.title || "Untitled",
       val: 4,
       color: "#89b4ff",
     }));
 
-    const graphLinks = links
+    const graphLinks: GraphLink[] = links
       .filter(
         (l) =>
           noteIdSet.has(l.sourceNoteId) && noteIdSet.has(l.targetNoteId)
@@ -52,7 +80,8 @@ export default function GraphView() {
   );
 
   const paintNode = useCallback(
-    (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    (node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      if (node.x === undefined || node.y === undefined) return;
       const r = node.val ?? 4;
       ctx.shadowBlur = 16;
       ctx.shadowColor = "#89b4ff";
@@ -72,7 +101,7 @@ export default function GraphView() {
   );
 
   const handleNodeClick = useCallback(
-    (node: any) => {
+    (node: GraphNode) => {
       router.push(`/note/${node.id}`);
     },
     [router]
@@ -87,10 +116,7 @@ export default function GraphView() {
   }, [notes]);
 
   return (
-    <div
-      ref={containerRef}
-      style={{ width: "100%", height: "100%", position: "relative" }}
-    >
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
       {/* Back to notes */}
       <button
         onClick={() => router.push("/")}
@@ -102,8 +128,8 @@ export default function GraphView() {
           padding: "6px 12px",
           fontSize: 11,
           fontFamily: "monospace",
-          background: "rgba(15,22,32,0.8)",
-          border: "1px solid #172338",
+          background: "var(--grove-bg)",
+          border: "1px solid var(--grove-border)",
           borderRadius: 6,
           color: "#89b4ff",
           cursor: "pointer",
@@ -139,8 +165,8 @@ export default function GraphView() {
             right: 16,
             zIndex: 10,
             width: 260,
-            background: "rgba(11,16,24,0.92)",
-            border: "1px solid #172338",
+            background: "var(--grove-bg)",
+            border: "1px solid var(--grove-border)",
             borderRadius: 8,
             padding: "10px 0",
             backdropFilter: "blur(8px)",
@@ -150,7 +176,7 @@ export default function GraphView() {
             style={{
               padding: "0 12px 8px",
               fontSize: 10,
-              color: "#374d68",
+              color: "var(--grove-text-3)",
               fontFamily: "monospace",
               letterSpacing: "0.1em",
             }}
@@ -181,11 +207,15 @@ export default function GraphView() {
                     fontSize: 10,
                   }}
                 >
-                  {noteTitleMap[link.sourceNoteId]} →{" "}
-                  {noteTitleMap[link.targetNoteId]}
+                  {noteTitleMap[link.sourceNoteId] ?? "Untitled"} →{" "}
+                  {noteTitleMap[link.targetNoteId] ?? "Untitled"}
                 </span>
                 <button
-                  onClick={() => acceptLink({ linkId: link._id })}
+                  onClick={() => {
+                    acceptLink({ linkId: link._id }).catch((err) =>
+                      console.error("Failed to accept link:", err)
+                    );
+                  }}
                   style={{
                     background: "none",
                     border: "none",
@@ -199,7 +229,11 @@ export default function GraphView() {
                   <Check size={12} />
                 </button>
                 <button
-                  onClick={() => dismissLink({ linkId: link._id })}
+                  onClick={() => {
+                    dismissLink({ linkId: link._id }).catch((err) =>
+                      console.error("Failed to dismiss link:", err)
+                    );
+                  }}
                   style={{
                     background: "none",
                     border: "none",
@@ -225,11 +259,11 @@ export default function GraphView() {
         nodeCanvasObjectMode={() => "replace"}
         onNodeClick={handleNodeClick}
         enableNodeDrag={true}
-        linkColor={(link: any) => link.color}
+        linkColor={(link: GraphLink) => link.color}
         linkWidth={1}
         linkDirectionalParticles={0}
-        width={typeof window !== "undefined" ? window.innerWidth : 1200}
-        height={typeof window !== "undefined" ? window.innerHeight : 800}
+        width={dimensions.width}
+        height={dimensions.height}
       />
     </div>
   );

@@ -39,12 +39,16 @@ export default function LinkNoteButton({ noteId }: LinkNoteButtonProps) {
   );
 
   const handleLink = async (targetId: Id<"notes">) => {
-    await createLink({
-      sourceNoteId: noteId as Id<"notes">,
-      targetNoteId: targetId,
-    });
-    setOpen(false);
-    setQueryText("");
+    try {
+      await createLink({
+        sourceNoteId: noteId as Id<"notes">,
+        targetNoteId: targetId,
+      });
+      setOpen(false);
+      setQueryText("");
+    } catch (error) {
+      console.error("Failed to create link:", error);
+    }
   };
 
   return (
