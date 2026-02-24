@@ -95,6 +95,10 @@ export const update = mutation({
     await ctx.scheduler.runAfter(0, internal.ai.syncBlocks, {
       noteId: args.noteId,
     });
+
+    await ctx.scheduler.runAfter(0, internal.ai.detectBacklinks, {
+      noteId: args.noteId,
+    });
   },
 });
 

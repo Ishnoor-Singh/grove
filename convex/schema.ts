@@ -136,4 +136,16 @@ export default defineSchema({
   })
     .index("by_sessionId", ["sessionId"])
     .index("by_sessionId_createdAt", ["sessionId", "createdAt"]),
+
+  // ── Note Links (knowledge graph edges) ──────────────────────
+  noteLinks: defineTable({
+    sourceNoteId: v.id("notes"),
+    targetNoteId: v.id("notes"),
+    type: v.union(v.literal("manual"), v.literal("auto")),
+    status: v.union(v.literal("pending"), v.literal("accepted")),
+    createdAt: v.number(),
+  })
+    .index("by_sourceNoteId", ["sourceNoteId"])
+    .index("by_targetNoteId", ["targetNoteId"])
+    .index("by_status", ["status"]),
 });

@@ -5,7 +5,7 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Plus, Trash2, Lock, Unlock, MessageSquare, FileText } from "lucide-react";
+import { Plus, Trash2, Lock, Unlock, MessageSquare, FileText, Network } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -16,6 +16,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const isLore = pathname.startsWith("/chat");
+  const isGraph = pathname === "/graph";
+  const isEditor = !isLore && !isGraph;
 
   const handleCreateNote = async () => {
     const newId = await createNote();
@@ -91,12 +93,24 @@ export default function Sidebar() {
           }}
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[10px] transition-colors"
           style={{
-            background: !isLore ? "var(--grove-accent-dim)" : "transparent",
-            color: !isLore ? "var(--grove-accent)" : "var(--grove-text-3)",
+            background: isEditor ? "var(--grove-accent-dim)" : "transparent",
+            color: isEditor ? "var(--grove-accent)" : "var(--grove-text-3)",
             fontFamily: "var(--font-geist-mono)",
           }}
         >
           <FileText size={10} /> Editor
+        </button>
+        <button
+          onClick={() => router.push("/graph")}
+          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[10px] transition-colors"
+          style={{
+            background: isGraph ? "var(--grove-accent-dim)" : "transparent",
+            color: isGraph ? "var(--grove-accent)" : "var(--grove-text-3)",
+            fontFamily: "var(--font-geist-mono)",
+            borderLeft: "1px solid var(--grove-border)",
+          }}
+        >
+          <Network size={10} /> Graph
         </button>
       </div>
 
